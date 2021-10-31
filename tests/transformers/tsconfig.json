@@ -1,0 +1,22 @@
+{
+    "compileOnSave": false,
+    "compilerOptions": {
+        "baseUrl": "./",
+        "outDir": "./bin",
+        "sourceMap": false,
+        "declaration": false,
+        "downlevelIteration": true,
+        "experimentalDecorators": true,
+        "moduleResolution": "Node",
+        "importHelpers": true,
+        "target": "ESNext",
+        "typeRoots": [
+            "node_modules/@types"
+        ],
+        "lib": [
+            "ESNext"
+        ]
+    },
+    "include": ["./*.ts"],
+    "exclude": ["./bin"]
+}

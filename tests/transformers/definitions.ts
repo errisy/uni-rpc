@@ -14,6 +14,11 @@ class Property {
     Name: string;
     Type: string;
 }
+
 class Service {
 
+}
+
+class Type {
+    GenericArguments: Type[] = [];
 }
