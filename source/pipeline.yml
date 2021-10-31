@@ -1,9 +1,7 @@
 trigger:
   branches:
     include:
-    - dev/*
     - main
-    - prod/*
   paths:
     include:
     - 'source/*'

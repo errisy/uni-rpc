@@ -1,0 +1,13 @@
+{
+    "name": "uni-rpc",
+    "version": "0.0.1",
+    "scripts": {
+        "prepare": "ts-patch install -s",
+        "tsc": "tsc"
+    },
+    "dependencies": {
+        "typescript": "4.4.4",
+        "ts-node": "10.3.0",
+        "tslib": "2.3.1"
+    }
+}

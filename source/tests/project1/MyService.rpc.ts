@@ -1,0 +1,6 @@
+
+namespace MyService {
+    
+    class 
+
+}

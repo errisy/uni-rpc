@@ -1,0 +1,21 @@
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - 'types/*'
+
+variables:
+- name: project
+  value: 'types'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: Npm@1
+  displayName: Install Node Packages
+  inputs:
+    command: 'publish'
+    workingDir: '$(project)'
