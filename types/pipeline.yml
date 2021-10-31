@@ -17,7 +17,7 @@ steps:
 - script: |
     node azure-devops/replace.js --file=$(project)/package.json -- --Build.BuildId=$(Build.BuildId)
 - task: Npm@1
-  displayName: Install Node Packages
   inputs:
     command: 'publish'
     workingDir: '$(project)'
+    publishEndpoint: 'errisy@npm'
