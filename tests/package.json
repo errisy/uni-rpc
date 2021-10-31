@@ -8,7 +8,6 @@
         "typescript": "4.4.4",
         "ts-node": "10.3.0",
         "tslib": "2.3.1",
-        "uni-rpc-lib": "^0.0.1505",
         "yaml": "1.10.2"
     }
 }
