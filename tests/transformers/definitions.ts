@@ -37,6 +37,7 @@ export class Argument{
 
 export class Type {
     Name: string;
+    SystemType: string;
     FullName: string;
     GenericArguments: Type[] = [];
 }

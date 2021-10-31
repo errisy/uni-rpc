@@ -116,10 +116,10 @@ class Builder {
       if (item.kind == TsKind.Content) {
         for (let subitem of item.getChildren()) {
           switch (subitem.kind) {
-            case TsKind.Namespace: {
+            case ts.SyntaxKind.ModuleDeclaration: {
               this.buildNamespace(subitem as any, stack, ns);
             } break;
-            case TsKind.Class: {
+            case ts.SyntaxKind.ClassDeclaration: {
               this.buildClass(subitem as any, stack, ns);
             } break;
           }
@@ -153,7 +153,7 @@ class Builder {
         if (item.kind == TsKind.Content) {
           for (let subitem of item.getChildren()) {
             switch (subitem.kind) {
-              case TsKind.Method: {
+              case ts.SyntaxKind.MethodDeclaration: {
                 this.buildMethod(subitem as any, stack, service);
               } break;
             }
@@ -168,7 +168,7 @@ class Builder {
         if (item.kind == TsKind.Content) {
           for (let subitem of item.getChildren()) {
             switch (subitem.kind) {
-              case TsKind.Property: {
+              case ts.SyntaxKind.PropertyDeclaration: {
                 this.buildProperty(subitem as any, stack, message);
               } break;
             }
@@ -199,6 +199,20 @@ class Builder {
     property.Name = name;
     console.log(`**** Property ${name} Begin`);
     for (let item of token.getChildren()) {
+      switch (item.kind) {
+        case ts.SyntaxKind.BooleanKeyword: {
+          property.Type = new Type();
+          property.Type.Name = 'string';
+          property.Type.SystemType = 'boolean';
+        } break;
+        case ts.SyntaxKind.StringKeyword: {
+          property.Type = new Type();
+          property.Type.Name = 'string';
+          property.Type.SystemType = 'string';
+        } break;
+        // to do: work out other possible SyntaxKind for Types
+
+      }
       if (item.kind == TsKind.PropertyType) {
         property.Type = this.resolveType(item as any, stack);
       }
