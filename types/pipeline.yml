@@ -19,6 +19,6 @@ steps:
 - task: Npm@1
   inputs:
     command: 'publish'
+    customCommand: '--access public'
     workingDir: '$(project)'
-    customCommand: '--access=public'
     publishEndpoint: 'errisy@npm'
