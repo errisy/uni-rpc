@@ -2,6 +2,7 @@ import * as ts from 'typescript';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
+import { Namespace, Service, Message, Property, Method, Type } from './definitions';
 
 interface Target {
     cs: string | string[];
@@ -91,8 +92,10 @@ const TsKind = {
   Property: 165,
   MemberName: 79,
   MethodArgument: 343,
-  MethodReturnType: 176,
-  PropertyType: 148
+  MethodReturnType1: 132,
+  MethodReturnType2: 148,
+  MethodReturnType3: 176,
+  PropertyType: 176
 }
 
 class Builder {
@@ -103,15 +106,21 @@ class Builder {
       }
     }
   }
-  
+  // DFS Backtracking
   buildNamespace(token: ts.NamespaceDeclaration, stack: string[]) {
-    let name = token.name.getText();
-    stack.push(name);
+    let ns = new Namespace();
+    ns.Name = token.name.getText();;
+    stack.push(ns.Name);
     for (let item of token.body.getChildren()) {
       if (item.kind == TsKind.Content) {
         for (let subitem of item.getChildren()) {
-          if (subitem.kind == TsKind.Class) {
-            this.buildClass(subitem as any, stack)
+          switch (subitem.kind) {
+            case TsKind.Namespace: {
+              this.buildNamespace(subitem as any, stack);
+            } break;
+            case TsKind.Class: {
+              this.buildClass(subitem as any, stack);
+            } break;
           }
         }
       }
@@ -122,46 +131,80 @@ class Builder {
   buildClass(token: ts.ClassDeclaration, stack: string[]) {
     let name = token.name.getText();
     console.log(`**** Class ${name} Begin`);
+    let isAbstract: boolean = false;
     if (token.modifiers) {
-      token.modifiers.forEach(item => {
-        console.log('modifier:', item.getText());
-      })
+      for (let modifier of token.modifiers) {
+        if (modifier.getText() == 'abstract') {
+          isAbstract = true;
+          break;
+        }
+      }
     }
-    for (let item of token.getChildren()) {
-      if (item.kind == TsKind.Content) {
-        for (let subitem of item.getChildren()) {
-          switch (subitem.kind) {
-            case TsKind.Method: {
-              this.buildMethod(subitem as any, stack);
-            } break;
-            case TsKind.Property: {
-              this.buildProperty(subitem as any, stack);
-            } break;
+    if (isAbstract) {
+      let service = new Service();
+      service.Name = name;
+      for (let item of token.getChildren()) {
+        if (item.kind == TsKind.Content) {
+          for (let subitem of item.getChildren()) {
+            switch (subitem.kind) {
+              case TsKind.Method: {
+                this.buildMethod(subitem as any, stack, service);
+              } break;
+            }
+          }
+        }
+      }
+    } else {
+      let message = new Message();
+      message.Name = name;
+      for (let item of token.getChildren()) {
+        if (item.kind == TsKind.Content) {
+          for (let subitem of item.getChildren()) {
+            switch (subitem.kind) {
+              case TsKind.Property: {
+                this.buildProperty(subitem as any, stack, message);
+              } break;
+            }
           }
         }
       }
     }
+   
     console.log(`**** Class ${name} End`);
   }
 
-  buildMethod(token: ts.MethodDeclaration, stack: string[]) {
+  buildMethod(token: ts.MethodDeclaration, stack: string[], service: Service) {
     let name = token.name.getText();
     console.log(`**** Method ${name} Begin`);
+    let method = new Method();
+    method.Name = name;
     for (let item of token.getChildren()) {
       print(item);
     }
     console.log(`**** Method ${name} End`);
+    service.Methods.push(method);
   }
 
-  buildProperty(token: ts.PropertyLikeDeclaration, stack: string[]) {
+  buildProperty(token: ts.PropertyLikeDeclaration, stack: string[], message: Message) {
     let name = token.name.getText();
+    let property = new Property();
+    property.Name = name;
     console.log(`**** Property ${name} Begin`);
     for (let item of token.getChildren()) {
+      if (item.kind == TsKind.PropertyType) {
+        property.Type = this.resolveType(item as any, stack);
+      }
       print(item);
     }
     console.log(`**** Property ${name} End`);
+    message.Properties.push(property);
+  }
+  resolveType(token: ts.TypeReference, stack: string[]): Type {
+    
   }
 }
+
+ 
 
 function emit(sourceFile: ts.SourceFile) {
   console.log('./uni-rpc.yaml', config);

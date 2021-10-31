@@ -1,6 +1,6 @@
 
 namespace MyService {
-    export abstract class OKS{
+    export class OKS{
         test: MyService.OKS;
     }
 

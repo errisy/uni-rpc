@@ -1,24 +1,42 @@
 
 
-class Namespace {
+export class Namespace {
+    Name: string;
     Namespaces: Namespace[] = [];
     Messages: Message[] = [];
     Services: Service[] = [];
 }
 
-class Message {
-    Properties: Property[];
-}
-
-class Property {
+export class Message {
     Name: string;
-    Type: string;
+    Namespace: string;
+    Properties: Property[] = [];
 }
 
-class Service {
-
+export class Property {
+    Name: string;
+    Type: Type;
 }
 
-class Type {
+export class Service {
+    Name: string;
+    Namespace: string;
+    Methods: Method[] = [];
+}
+
+export class Method {
+    Name: string;
+    Arguments: Argument[];
+    ReturnType: string;
+}
+
+export class Argument{
+    Name: string;
+    Type: Type;
+}
+
+export class Type {
+    Name: string;
+    FullName: string;
     GenericArguments: Type[] = [];
 }

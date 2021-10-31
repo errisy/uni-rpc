@@ -1,6 +1,12 @@
 
 namespace MyService {
 
+    export namespace SubService {
+        export class SubMessage {
+
+        }
+    }
+
     export abstract class DevService {
         abstract Send(message: Message): boolean;
         abstract Get(): boolean;
@@ -19,4 +25,6 @@ namespace MyService {
 namespace MyService {
     
 }
+
+
 
