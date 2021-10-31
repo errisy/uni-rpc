@@ -1,5 +1,7 @@
 namespace MyService {
     
-    class 
+    class test {
+        
+    }
 
 }

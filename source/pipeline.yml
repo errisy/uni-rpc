@@ -5,6 +5,11 @@ trigger:
   paths:
     include:
     - 'source/*'
+
+variables:
+- name: project
+  value: 'source'
+
 pool:
   vmImage: 'ubuntu-latest'
 
