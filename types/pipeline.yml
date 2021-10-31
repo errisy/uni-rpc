@@ -18,7 +18,7 @@ steps:
     node azure-devops/replace.js --file=$(project)/package.json -- --Build.BuildId=$(Build.BuildId)
 - task: Npm@1
   inputs:
-    command: 'publish'
-    customCommand: '--access public'
+    command: 'custom'
+    customCommand: 'publish --access public'
     workingDir: '$(project)'
     publishEndpoint: 'errisy@npm'
