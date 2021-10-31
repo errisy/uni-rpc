@@ -1,4 +1,4 @@
 {
-    "name": "@types/uni-rpc",
+    "name": "test-data",
     "version": "0.0.$(Build.BuildId)"
 }

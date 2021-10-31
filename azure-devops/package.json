@@ -1,0 +1,12 @@
+{
+    "name":"azure-devops",
+    "version":"1.0.0",
+    "scripts": {
+        "test":"tsc && jest bin"
+    },
+    "devDependencies": {
+        "@types/node": "16.11.1",
+        "@types/jest": "27.0.2",
+        "jest": "27.3.1"
+    }
+}
