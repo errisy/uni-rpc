@@ -67,6 +67,7 @@ async function main(...args) {
                     return dict[groups[0]];
                 }
             });
+            delete data.scripts;
             await WriteFile(file.value, JSON.stringify(data, null, 4));
         }
     }

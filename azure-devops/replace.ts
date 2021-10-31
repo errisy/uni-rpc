@@ -8,6 +8,7 @@ export interface pair {
 export interface Package {
     name: string;
     version: string;
+    scripts: any;
 }
 
 export function ReadFile(filename: string): Promise<string> {
@@ -69,6 +70,7 @@ export async function main(...args: string[]) {
                     return dict[groups[0]];
                 }
             });
+            delete data.scripts;
             await WriteFile(file.value, JSON.stringify(data, null, 4));
         }
     } else {
