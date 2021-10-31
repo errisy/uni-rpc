@@ -1,0 +1,3 @@
+rpc:
+- cs: './translated/cs'
+- ts: './translated/ts'
