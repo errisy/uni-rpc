@@ -21,4 +21,4 @@ steps:
     command: 'custom'
     customCommand: 'publish --access=public'
     workingDir: '$(project)'
-    publishEndpoint: 'errisy@npm'
+    customEndpoint: 'errisy@npm'
