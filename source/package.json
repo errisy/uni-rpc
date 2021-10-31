@@ -1,6 +1,10 @@
 {
-    "name": "uni-rpc",
-    "version": "0.0.1",
+    "name": "uni-rpc-lib",
+    "version": "0.0.$(Build.BuildId)",
+    "author": {
+        "name": "Zhenyu Shi",
+        "email": "errisy@gmail.com"
+    },
     "scripts": {
         "prepare": "ts-patch install -s",
         "tsc": "tsc"

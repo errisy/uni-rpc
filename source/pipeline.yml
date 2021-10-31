@@ -10,4 +10,10 @@ pool:
 
 steps:
 - script: |
-    echo ok
+    node azure-devops/replace.js --file=$(project)/package.json -- --Build.BuildId=$(Build.BuildId)
+- task: Npm@1
+  inputs:
+    command: 'custom'
+    customCommand: 'publish --access=public'
+    workingDir: '$(project)'
+    publishEndpoint: 'errisy@npm'
