@@ -17,7 +17,12 @@
             {
                 "Properties": [
                     {
-                        "Name": "name"
+                        "Name": "name",
+                        "Type": {
+                            "GenericArguments": [],
+                            "Name": "string",
+                            "SystemType": "string"
+                        }
                     },
                     {
                         "Name": "value",
@@ -27,7 +32,12 @@
                         }
                     },
                     {
-                        "Name": "tested"
+                        "Name": "tested",
+                        "Type": {
+                            "GenericArguments": [],
+                            "Name": "string",
+                            "SystemType": "boolean"
+                        }
                     }
                 ],
                 "Name": "Message"
