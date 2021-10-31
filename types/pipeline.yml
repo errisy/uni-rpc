@@ -20,4 +20,5 @@ steps:
   inputs:
     command: 'publish'
     workingDir: '$(project)'
+    customCommand: '--access=public'
     publishEndpoint: 'errisy@npm'
