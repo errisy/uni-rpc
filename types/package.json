@@ -1,4 +1,8 @@
 {
     "name": "@types/uni-rpc",
-    "version": "0.0.$(Build.BuildId)"
+    "version": "0.0.$(Build.BuildId)",
+    "author": {
+        "name": "Zhenyu Shi",
+        "email": "errisy@gmail.com"
+    }
 }
