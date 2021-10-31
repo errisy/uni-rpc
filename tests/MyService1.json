@@ -1,0 +1,66 @@
+[
+    {
+        "Namespaces": [
+            {
+                "Namespaces": [],
+                "Messages": [
+                    {
+                        "Properties": [],
+                        "Name": "SubMessage"
+                    }
+                ],
+                "Services": [],
+                "Name": "SubService"
+            }
+        ],
+        "Messages": [
+            {
+                "Properties": [
+                    {
+                        "Name": "name"
+                    },
+                    {
+                        "Name": "value",
+                        "Type": {
+                            "GenericArguments": [],
+                            "Name": "integer"
+                        }
+                    },
+                    {
+                        "Name": "tested"
+                    }
+                ],
+                "Name": "Message"
+            }
+        ],
+        "Services": [
+            {
+                "Methods": [
+                    {
+                        "Name": "Send"
+                    },
+                    {
+                        "Name": "Get"
+                    },
+                    {
+                        "Name": "Test"
+                    },
+                    {
+                        "Name": "AB"
+                    },
+                    {
+                        "Name": "Gap"
+                    }
+                ],
+                "Name": "DevService"
+            }
+        ],
+        "Name": "MyService"
+    },
+    {
+        "Namespaces": [],
+        "Messages": [],
+        "Services": [],
+        "Name": "MyService"
+    }
+]

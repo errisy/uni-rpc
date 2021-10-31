@@ -99,6 +99,7 @@ const TsKind = {
 }
 
 class Builder {
+  namespaces: Namespace[] = [];
   constructor (private sourceFile: ts.SourceFile, private targets: Target[]) {
     for (let item of sourceFile.statements) {
       if (item.kind == TsKind.Namespace) {
@@ -107,7 +108,7 @@ class Builder {
     }
   }
   // DFS Backtracking
-  buildNamespace(token: ts.NamespaceDeclaration, stack: string[]) {
+  buildNamespace(token: ts.NamespaceDeclaration, stack: string[], parent?: Namespace) {
     let ns = new Namespace();
     ns.Name = token.name.getText();;
     stack.push(ns.Name);
@@ -116,19 +117,24 @@ class Builder {
         for (let subitem of item.getChildren()) {
           switch (subitem.kind) {
             case TsKind.Namespace: {
-              this.buildNamespace(subitem as any, stack);
+              this.buildNamespace(subitem as any, stack, ns);
             } break;
             case TsKind.Class: {
-              this.buildClass(subitem as any, stack);
+              this.buildClass(subitem as any, stack, ns);
             } break;
           }
         }
       }
     }
     stack.pop();
+    if (parent) {
+      parent.Namespaces.push(ns);
+    } else {
+      this.namespaces.push(ns);
+    }
   }
 
-  buildClass(token: ts.ClassDeclaration, stack: string[]) {
+  buildClass(token: ts.ClassDeclaration, stack: string[], ns: Namespace) {
     let name = token.name.getText();
     console.log(`**** Class ${name} Begin`);
     let isAbstract: boolean = false;
@@ -154,6 +160,7 @@ class Builder {
           }
         }
       }
+      ns.Services.push(service);
     } else {
       let message = new Message();
       message.Name = name;
@@ -168,6 +175,7 @@ class Builder {
           }
         }
       }
+      ns.Messages.push(message);
     }
    
     console.log(`**** Class ${name} End`);
@@ -199,18 +207,22 @@ class Builder {
     console.log(`**** Property ${name} End`);
     message.Properties.push(property);
   }
-  resolveType(token: ts.TypeReference, stack: string[]): Type {
-    
+  resolveType(token: ts.TypeNode, stack: string[]): Type {
+    let t = new Type();
+    t.Name = token.getText();
+    return t;
   }
 }
-
  
 
 function emit(sourceFile: ts.SourceFile) {
   console.log('./uni-rpc.yaml', config);
   ClearTargets(config);
   if(sourceFile.fileName.toLowerCase().endsWith('.ts')) {
-    new Builder(sourceFile, config.rpc);
+    let builder = new Builder(sourceFile, config.rpc);
+    console.log(JSON.stringify(builder.namespaces, null, 4));
+    let output = sourceFile.fileName.replace(/.ts$/ig, '.json');
+    WriteFile(output, JSON.stringify(builder.namespaces, null, 4));
   }
   return sourceFile;
 }

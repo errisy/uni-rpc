@@ -1,0 +1,32 @@
+[
+    {
+        "Namespaces": [],
+        "Messages": [
+            {
+                "Properties": [
+                    {
+                        "Name": "test",
+                        "Type": {
+                            "GenericArguments": [],
+                            "Name": "MyService.OKS"
+                        }
+                    }
+                ],
+                "Name": "OKS"
+            }
+        ],
+        "Services": [],
+        "Name": "MyService"
+    },
+    {
+        "Namespaces": [],
+        "Messages": [
+            {
+                "Properties": [],
+                "Name": "Tom"
+            }
+        ],
+        "Services": [],
+        "Name": "USE"
+    }
+]
