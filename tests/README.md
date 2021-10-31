@@ -16,4 +16,4 @@ npm run prepare
 
 ## Objectives
 1. Build a RPC system across C#, TypeScript/JavaScript, Python, Java (Support Later)
-2. Enable Frontend-Backend Communications with RPC in both HTTP Request and WebSocket Modes.
+2. Enable Frontend-Backend Communications with RPC in both HTTP Request and WebSocket Modes, working with Local Visual Studio Debugging, Lambda Functions, etc.
