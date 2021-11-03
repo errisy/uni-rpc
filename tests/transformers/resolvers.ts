@@ -10,7 +10,6 @@ export class SourceFileResovler {
 
     resolveSourceFile(sourceFile: ts.SourceFile) {
         for (let child of sourceFile.statements) {
-            // console.log('resolveSourceFile:', SyntaxKindMap[child.kind]);
             switch (child.kind) {
                 case ts.SyntaxKind.ModuleDeclaration: {
                     this.resolveModule(child as any);
