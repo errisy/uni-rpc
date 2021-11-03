@@ -1,8 +1,12 @@
 import * as ts from 'typescript';
+import { ProgramTransformerExtras, PluginConfig } from 'ts-patch';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
 import { Namespace, Service, Message, Property, Method, Type } from './definitions';
+import { SyntaxKindMap } from './SyntaxKindMap';
+import { SourceFileResovler } from './resolvers';
+import {} from 'ts-expose-internals';
 
 interface Target {
     cs: string | string[];
@@ -78,166 +82,30 @@ function ClearTargets(config: RPC) {
   }
 }
 
+
 const config = readRPCConfig();
+const builder = new SourceFileResovler();
 
-function print(statement: ts.Statement | ts.Node) {
-  console.log(`Statement: ${statement.kind}:\n${statement.getText()}`);
-}
 
-const TsKind = {
-  Namespace: 259,
-  Class: 255,
-  Content: 343,
-  Method: 167,
-  Property: 165,
-  MemberName: 79,
-  MethodArgument: 343,
-  MethodReturnType1: 132,
-  MethodReturnType2: 148,
-  MethodReturnType3: 176,
-  PropertyType: 176
-}
-
-class Builder {
-  namespaces: Namespace[] = [];
-  constructor (private sourceFile: ts.SourceFile, private targets: Target[]) {
-    for (let item of sourceFile.statements) {
-      if (item.kind == TsKind.Namespace) {
-        this.buildNamespace(item as any, []);
-      }
-    }
-  }
-  // DFS Backtracking
-  buildNamespace(token: ts.NamespaceDeclaration, stack: string[], parent?: Namespace) {
-    let ns = new Namespace();
-    ns.Name = token.name.getText();;
-    stack.push(ns.Name);
-    for (let item of token.body.getChildren()) {
-      if (item.kind == TsKind.Content) {
-        for (let subitem of item.getChildren()) {
-          switch (subitem.kind) {
-            case ts.SyntaxKind.ModuleDeclaration: {
-              this.buildNamespace(subitem as any, stack, ns);
-            } break;
-            case ts.SyntaxKind.ClassDeclaration: {
-              this.buildClass(subitem as any, stack, ns);
-            } break;
-          }
-        }
-      }
-    }
-    stack.pop();
-    if (parent) {
-      parent.Namespaces.push(ns);
-    } else {
-      this.namespaces.push(ns);
-    }
-  }
-
-  buildClass(token: ts.ClassDeclaration, stack: string[], ns: Namespace) {
-    let name = token.name.getText();
-    console.log(`**** Class ${name} Begin`);
-    let isAbstract: boolean = false;
-    if (token.modifiers) {
-      for (let modifier of token.modifiers) {
-        if (modifier.getText() == 'abstract') {
-          isAbstract = true;
-          break;
-        }
-      }
-    }
-    if (isAbstract) {
-      let service = new Service();
-      service.Name = name;
-      for (let item of token.getChildren()) {
-        if (item.kind == TsKind.Content) {
-          for (let subitem of item.getChildren()) {
-            switch (subitem.kind) {
-              case ts.SyntaxKind.MethodDeclaration: {
-                this.buildMethod(subitem as any, stack, service);
-              } break;
-            }
-          }
-        }
-      }
-      ns.Services.push(service);
-    } else {
-      let message = new Message();
-      message.Name = name;
-      for (let item of token.getChildren()) {
-        if (item.kind == TsKind.Content) {
-          for (let subitem of item.getChildren()) {
-            switch (subitem.kind) {
-              case ts.SyntaxKind.PropertyDeclaration: {
-                this.buildProperty(subitem as any, stack, message);
-              } break;
-            }
-          }
-        }
-      }
-      ns.Messages.push(message);
-    }
-   
-    console.log(`**** Class ${name} End`);
-  }
-
-  buildMethod(token: ts.MethodDeclaration, stack: string[], service: Service) {
-    let name = token.name.getText();
-    console.log(`**** Method ${name} Begin`);
-    let method = new Method();
-    method.Name = name;
-    for (let item of token.getChildren()) {
-      print(item);
-    }
-    console.log(`**** Method ${name} End`);
-    service.Methods.push(method);
-  }
-
-  buildProperty(token: ts.PropertyLikeDeclaration, stack: string[], message: Message) {
-    let name = token.name.getText();
-    let property = new Property();
-    property.Name = name;
-    console.log(`**** Property ${name} Begin`);
-    for (let item of token.getChildren()) {
-      switch (item.kind) {
-        case ts.SyntaxKind.BooleanKeyword: {
-          property.Type = new Type();
-          property.Type.Name = 'string';
-          property.Type.SystemType = 'boolean';
-        } break;
-        case ts.SyntaxKind.StringKeyword: {
-          property.Type = new Type();
-          property.Type.Name = 'string';
-          property.Type.SystemType = 'string';
-        } break;
-        // to do: work out other possible SyntaxKind for Types
-
-      }
-      if (item.kind == TsKind.PropertyType) {
-        property.Type = this.resolveType(item as any, stack);
-      }
-      print(item);
-    }
-    console.log(`**** Property ${name} End`);
-    message.Properties.push(property);
-  }
-  resolveType(token: ts.TypeNode, stack: string[]): Type {
-    let t = new Type();
-    t.Name = token.getText();
-    return t;
-  }
-}
- 
 
 function emit(sourceFile: ts.SourceFile) {
+
+  console.log("sourceFile['SourceFileCount']:", global['SourceFileCount']);
+
+  global['SourceFileCount'] = global['SourceFileCount'] - 1;
+
   console.log('./uni-rpc.yaml', config);
   ClearTargets(config);
-  if(sourceFile.fileName.toLowerCase().endsWith('.ts')) {
-    let builder = new Builder(sourceFile, config.rpc);
-    console.log(JSON.stringify(builder.namespaces, null, 4));
-    let output = sourceFile.fileName.replace(/.ts$/ig, '.json');
-    WriteFile(output, JSON.stringify(builder.namespaces, null, 4));
+  if (sourceFile.fileName.toLowerCase().endsWith('.ts')) {
+    builder.resolveSourceFile(sourceFile);
   }
+
+  if (global['SourceFileCount'] == 0) {
+    console.log('builder.Children.size:', builder.Children.size);
+    console.log(JSON.stringify(builder.Children, null, 4));
+    WriteFile('./uni-rpc.json', JSON.stringify(builder.Children, null, 4));
+  }
+  
   return sourceFile;
 }
 
@@ -250,3 +118,88 @@ const transformer: ts.TransformerFactory<ts.SourceFile> = () => {
   };
   
 export default transformer;
+
+
+// let filecount: number = 0;
+
+// function writeOutput() {
+//   console.log(JSON.stringify(builder.Children, null, 4));
+//   WriteFile('./uni-rpc.json', JSON.stringify(builder.Children, null, 4));
+// }
+
+// function transformAst(this: typeof ts, context: ts.TransformationContext) {
+//   const tsInstance = this;
+//   /* Transformer Function */
+//   return (sourceFile: ts.SourceFile) => {
+//     builder.resolveSourceFile(sourceFile);
+//     if (filecount-- == 0) writeOutput();
+//     return sourceFile;
+//   }
+// }
+
+// function getPatchedHost(
+//   maybeHost: ts.CompilerHost | undefined,
+//   tsInstance: typeof ts,
+//   compilerOptions: ts.CompilerOptions
+// ): ts.CompilerHost & { fileCache: Map<string, ts.SourceFile> }
+// {
+//   const fileCache = new Map();
+//   const compilerHost = maybeHost ?? tsInstance.createCompilerHost(compilerOptions, true);
+//   const originalGetSourceFile = compilerHost.getSourceFile;
+
+//   return Object.assign(compilerHost, {
+//     getSourceFile(fileName: string, languageVersion: ts.ScriptTarget) {
+//       fileName = ts.sys.resolvePath(fileName);
+//       console.log('fileName:', fileName);
+//       if (fileCache.has(fileName)) return fileCache.get(fileName);
+
+//       const sourceFile = originalGetSourceFile.apply(void 0, Array.from(arguments) as any);
+//       fileCache.set(fileName, sourceFile);
+
+//       return sourceFile;
+//     },
+//     fileCache
+//   });
+// }
+
+
+// export default function(program: ts.Program, 
+//   host: ts.CompilerHost | undefined, 
+//   options: PluginConfig, 
+//   { ts: tsInstance }: ProgramTransformerExtras) {
+//   console.log(typeof program);
+  
+//   for (let sourceFile of program.getSourceFiles()) {
+//     if (sourceFile.fileName.toLowerCase().endsWith('.d.ts')) continue;
+//     if (sourceFile.fileName.toLowerCase().endsWith('.ts')) {
+//       ++filecount;
+//       console.log('sourcefile.text:',  sourceFile.text);
+//     } 
+//   }
+
+
+
+//   const compilerOptions = program.getCompilerOptions();
+//   const compilerHost = getPatchedHost(host, tsInstance, compilerOptions);
+//   const rootFileNames = program.getRootFileNames().map(tsInstance.normalizePath);
+
+//   /* Transform AST */
+//   const transformedSource = tsInstance.transform(
+//     /* sourceFiles */ program.getSourceFiles().filter(sourceFile => rootFileNames.includes(sourceFile.fileName)),
+//     /* transformers */ [ transformAst.bind(tsInstance) ],
+//     compilerOptions
+//   ).transformed;
+
+//   /* Render modified files and create new SourceFiles for them to use in host's cache */
+//   // const { printFile } = tsInstance.createPrinter();
+//   // console.log('printFile', printFile)
+//   // for (const sourceFile of transformedSource) {
+//   //   const { fileName, languageVersion } = sourceFile;
+//   //   const updatedSourceFile = tsInstance.createSourceFile(fileName, printFile(sourceFile), languageVersion);
+//   //   compilerHost.fileCache.set(fileName, updatedSourceFile);
+//   // }
+
+//   /* Re-create Program instance */
+//   return tsInstance.createProgram(rootFileNames, compilerOptions, compilerHost);
+
+// }

@@ -16,7 +16,11 @@
         "lib": [
             "ESNext"
         ],
-        "plugins": [{ "transform": "./transformers/translate.ts", "type": "raw" }]
+        "plugins": [
+            { "transform": "./transformers/translate.ts",  "type": "raw" },
+            // { "transform": "./transformers/ast.ts",  "type": "config", "transformProgram": true }
+            { "transform": "./transformers/program-transform.ts", "type": "config", "transformProgram": true }
+        ]
     },
     "include": [ "./*.ts"],
     "exclude": [ "./transformers/**", "./translated/**" ],
