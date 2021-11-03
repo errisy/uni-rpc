@@ -12,7 +12,7 @@ export class Namespace implements ILocalNameResolver{
     Namespaces: Namespace[] = [];
     Messages: Message[] = [];
     Services: Service[] = [];
-    Children: Map<string, Message | Service | Type> = new Map();
+    Children: Map<string, Namespace | Message | Service | Type> = new Map();
     Parent: ILocalNameResolver;
     get NamespaceName(): string {
         return this.Fullname.join('.');
@@ -211,12 +211,7 @@ export class Parameter implements ILocalNameResolver{
     Type: Type;
     Parent: ILocalNameResolver;
     resolve(fullname: string[]): Type {
-        if (fullname.length == 1 && this.Children.has(fullname[0])) {
-            // it is generic parameter type
-            return this.Children.get(fullname[0]);
-        } else {
-            return this.Parent.resolve(fullname);
-        }
+        return this.Parent.resolve(fullname);
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;

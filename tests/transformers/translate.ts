@@ -84,7 +84,7 @@ function ClearTargets(config: RPC) {
 
 
 const config = readRPCConfig();
-const builder = new SourceFileResovler();
+const resolver = new SourceFileResovler();
 
 
 
@@ -95,13 +95,13 @@ function emit(sourceFile: ts.SourceFile) {
 
   if (lowerFilename.endsWith('.ts') && !lowerFilename.endsWith('.d.ts')) {
     global['SourceFileCount'] = global['SourceFileCount'] - 1;
-    builder.resolveSourceFile(sourceFile);
+    resolver.resolveSourceFile(sourceFile);
     if (global['SourceFileCount'] == 0) {
-      console.log('builder.Children.size:', builder.Children.size);
+      console.log('builder.Children.size:', resolver.Children.size);
       let results: Namespace[] = [];
-      for (let key of builder.Children.keys()) {
+      for (let key of resolver.Children.keys()) {
         // console.log(JSON.stringify(builder.Children.get(key), null, 4));
-        results.push(builder.Children.get(key));
+        results.push(resolver.Children.get(key));
       }
       WriteFile('./uni-rpc.json', JSON.stringify(results, null, 4));
     }
