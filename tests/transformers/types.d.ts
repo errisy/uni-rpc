@@ -17,6 +17,8 @@ declare type float = 'float';
 
 declare type double = 'double';
 
+declare type bytes = 'bytes';
+
 declare class List<T> {}
 
 declare class Dict<TKey, TValue> {}

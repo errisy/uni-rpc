@@ -17,14 +17,13 @@
             "ESNext"
         ],
         "plugins": [
-            { "transform": "./transformers/translate.ts",  "type": "raw" },
-            // { "transform": "./transformers/ast.ts",  "type": "config", "transformProgram": true }
-            { "transform": "./transformers/program-transform.ts", "type": "config", "transformProgram": true }
+            { "transform": "./transformers/sourcefile-count.ts", "type": "config", "transformProgram": true },
+            { "transform": "./transformers/translate.ts",  "type": "raw" }
         ]
     },
     "include": [ "./*.ts"],
     "exclude": [ "./transformers/**", "./translated/**" ],
     "files": [
-        "transformers/index.d.ts"
+        "transformers/types.d.ts"
     ]
 }

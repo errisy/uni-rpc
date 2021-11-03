@@ -1,4 +1,4 @@
-import {Namespace, Service, Message, Method, Argument, Property, Type, BooleanType, StringType, FloatType, DoubleType, IntegerType, LongType, ListType, DictType, ArrayType} from './definitions';
+import {Namespace, Service, Message, Method, Parameter as Parameter, Property, Type, BooleanType, StringType, FloatType, DoubleType, IntegerType, LongType, ListType, DictType, ArrayType} from './definitions';
 import * as ts from 'typescript';
 import { SyntaxKindMap } from './SyntaxKindMap';
 
@@ -19,20 +19,24 @@ export class SourceFileResovler {
         }
     }
 
-    private buildCurrentNamespaceFullname(name?: string) {
+    private buildCurrentNamespaceFullname(name?: string): string[] {
         if (typeof name == 'string') {
-            return this.NamespaceStack.map(ns => ns.Name).join('.') + '.' + name;
+            if (this.NamespaceStack.length == 0) return [name];
+            return [...this.NamespaceStack[this.NamespaceStack.length - 1].Fullname, name];
         } else {
-            return this.NamespaceStack.map(ns => ns.Name).join('.');
+            if (this.NamespaceStack.length == 0) return [];
+            return [...this.NamespaceStack[this.NamespaceStack.length - 1].Fullname];
         }
     }
 
-    private getNamespace(nsName: string): Namespace {
+    private getNamespace(fullname: string[]): Namespace {
+        let nsName = fullname.join('.');
         if (this.Children.has(nsName)) {
             return this.Children.get(nsName);
         } else {
             let nsInstance = new Namespace();
-            nsInstance.Name = nsName;
+            nsInstance.Name = fullname[fullname.length - 1];
+            nsInstance.Fullname = fullname;
             this.Children.set(nsName, nsInstance);
             return nsInstance;
         }
@@ -44,7 +48,7 @@ export class SourceFileResovler {
     }
 
     private resolveModule(token: ts.ModuleDeclaration) {
-        let name = token.name.getFullText();
+        let name = resolveName(token.name as any);
         let nsName = this.buildCurrentNamespaceFullname(name);
         let nsInstance: Namespace = this.getNamespace(nsName);
         this.NamespaceStack.push(nsInstance);
@@ -70,199 +74,202 @@ export class SourceFileResovler {
     }
 
     private resolveClass(token: ts.ClassDeclaration) {
-        let name = token.name.getFullText();
+        let name = resolveName(token.name as any);
         let nsName = this.buildCurrentNamespaceFullname();
         if (isAbstractClass(token)) {
             let service: Service = this.currentNamespace.addService(nsName, name);
+            if (token.typeParameters) {
+                service.IsGeneric = true;
+                for (let typeParameter of token.typeParameters) {
+                    service.GenericArguments.push(resolveTypeParameter(typeParameter));
+                }
+            }
             for (let item of token.members) {
                 switch (item.kind) {
                     case ts.SyntaxKind.MethodDeclaration: {
-                        service.Methods.push(this.resolveMethod(item as any));
+                        service.Methods.push(resolveMethod(item as any));
                     } break;
                 }
             }
         } else {
             let message: Message = this.currentNamespace.addMessage(nsName, name);
+            if (token.typeParameters) {
+                message.IsGeneric = true;
+                for (let typeParameter of token.typeParameters) {
+                    message.GenericArguments.push(resolveTypeParameter(typeParameter));
+                }
+            }
             for (let item of token.members) {
                 switch (item.kind) {
                     case ts.SyntaxKind.PropertyDeclaration: {
-                        message.Properties.push(this.resolveProperty(item as any));
+                        message.Properties.push(resolveProperty(item as any));
                     } break;
                 }
             }
+            let messageType = new Type(name);
+            messageType.FullName = [...this.NamespaceStack.map(ns => ns.Name), name];
         }
     }
-
-    private resolveMethod(token: ts.MethodDeclaration): Method {
-        let name = token.name.getFullText();
-        let stage: number = 0;
-        let method = new Method();
-        method.Name = name;
-        for (let item of token.getChildren()) {
-            switch (stage) {
-                case 0: case 1: case 2: case 3:{
-                    switch (item.kind) {
-                        case ts.SyntaxKind.OpenParenToken: {
-                            ++stage; // 0 -> 1
-                        } break;
-                        case ts.SyntaxKind.SyntaxList: {
-                            ++stage; // 1 -> 2
-                        } break;
-                        case ts.SyntaxKind.CloseParenToken: {
-                            ++stage; // 2 -> 3
-                        } break;
-                        case ts.SyntaxKind.ColonToken: {
-                            ++stage; // 3 -> 4;
-                        }
-                    }
-                } break;
-                case 4: {
-                    switch (item.kind) {
-                        case ts.SyntaxKind.SemicolonToken:
-                        case ts.SyntaxKind.ColonToken:
-                            break;
-                        default: {
-                            method.ReturnType = this.resolveType(item as any); 
-                        } break;
-                    }
-                } break;
-            }
-        }
-        return method;
-    }
-
-    private resolveArguments(token: ts.SyntaxList): Argument[] {
-        let parameters: Argument[] = [];
-        for (let item of token.getChildren()) {
-            console.log('resolveArguments:', item.getFullText(), SyntaxKindMap[item.kind]);
-        }
-        return parameters;
-    }
-
-    private resolveProperty(token: ts.PropertyDeclaration): Property {
-        let name = token.name.getFullText();
-        let stage: number = 0;
-        let property = new Property();
-        property.Name = name;
-        for (let item of token.getChildren()) {
-            switch (stage) {
-                case 0: {
-                    switch (item.kind) {
-                        case ts.SyntaxKind.ColonToken: {
-                            ++stage; // 0 -> 1
-                        } break;
-                    }
-                } break;
-                case 1: {
-                    switch (item.kind) {
-                        case ts.SyntaxKind.ColonToken: 
-                        case ts.SyntaxKind.SemicolonToken:
-                            break;
-                        default: {
-                            property.Type = this.resolveType(item);
-                            ++stage; // 1 -> 2
-                        } break;
-                    }
-                } break;
-            }
-        }
-        return property;
-    }
-
-    private resolveType(token: ts.Node): Type {
-        switch (token.kind) {
-            case ts.SyntaxKind.BooleanKeyword: {
-                return BooleanType;
-            } break;
-            case ts.SyntaxKind.StringKeyword: {
-                return StringType;
-            } break;
-            case ts.SyntaxKind.NumberKeyword: {
-                return FloatType;
-            } break;
-            case ts.SyntaxKind.TypeReference: {
-                return this.resolveTypeReference(token as any);
-            } break;
-            case ts.SyntaxKind.ArrayType: {
-                return this.resolveArrayType(token as any);
-            } break;
-            default: {
-                throw `resolveType: Unexpected token kind ${SyntaxKindMap[token.kind]} => '${token.getFullText()}'`;
-            } break;
-        }
-    }
-
-    private resolveArrayType(token: ts.ArrayTypeNode): Type {
-        let typeInstance = new Type('Array');
-        typeInstance.IsGeneric = true;
-        typeInstance.GenericDefinition = ArrayType;
-        typeInstance.GenericArguments = [this.resolveType(token.elementType)];
-        return typeInstance;
-    }
-
-    private resolveTypeReference(token: ts.TypeNode): Type {
-        let t = new Type();
-        for (let item of token.getChildren()) {
-          // console.log('TypeNode Child:', SyntaxKindMap[item.kind], item.getFullText());
-          switch (item.kind) {
-            case ts.SyntaxKind.Identifier: {
-              t.Name = this.resolveIdentifier(item as any);
-              t.FullName = [t.Name];
-            } break;
-            case ts.SyntaxKind.QualifiedName: {
-              t.FullName = this.resolveQualifiedName(item as any);
-            } break;
-            case ts.SyntaxKind.LessThanToken: {
-              t.IsGeneric = true;
-            } break;
-            case ts.SyntaxKind.SyntaxList: {
-              t.GenericArguments = this.resolveGenericArguments(item as any);
-            } break;
-          }
-        }
-        // console.log('*** Stop to iterate TypeReference:');
-        return t;
-    }
-
-    private resolveGenericArguments(token: ts.SyntaxList): Type[] {
-        let types: Type[] = [];
-        for (let item of token.getChildren()) {
-        //   console.log('resolveGenericArguments:', SyntaxKindMap[item.kind], item.getFullText());
-          switch (item.kind) {
-            case ts.SyntaxKind.CommaToken: 
-                break;
-            default: {
-                types.push(this.resolveType(item as any));
-            } break;
-          }
-        }
-        return types;
-      }
-
-      resolveQualifiedName(token: ts.QualifiedName): string[] {
-        let results: string[] = [];
-        switch (token.left.kind) {
-          case ts.SyntaxKind.QualifiedName: {
-            results.push(...this.resolveQualifiedName(token.left as any));
-          } break;
-          case ts.SyntaxKind.Identifier: {
-            results.push(this.resolveIdentifier(token.left as any));
-          } break;
-        }
-        switch (token.right.kind) {
-          case ts.SyntaxKind.Identifier: {
-            results.push(this.resolveIdentifier(token.right as any));
-          } break;
-        }
-        return results;
-      }
-    
-      private resolveIdentifier(token: ts.Identifier): string {
-        return token.text;
-      }
 }
 
-export function isAbstractClass(token: ts.ClassDeclaration) {
+function resolveMethod(token: ts.MethodDeclaration): Method {
+    let name = resolveName(token.name as any);
+    let method = new Method();
+    method.Name = name;
+    if (token.typeParameters) {
+        method.IsGeneric = true;
+        for (let typeParameter of token.typeParameters) {
+            method.GenericArguments.push(resolveTypeParameter(typeParameter));
+        }
+    }
+    method.Parameters = resolveParameters(token.parameters as any);
+    method.ReturnType = resolveType(token.type as any); 
+    return method;
+}
+
+function resolveParameters(parameterArray: ts.NodeArray<ts.ParameterDeclaration>): Parameter[] {
+    let parameters: Parameter[] = [];
+    for (let item of parameterArray) {
+        parameters.push(resolveParameter(item as any));
+    }
+    return parameters;
+}
+
+function resolveParameter(token: ts.ParameterDeclaration): Parameter {
+    let parameter: Parameter = new Parameter();
+    parameter.Name = resolveName(token.name);
+    parameter.Type = resolveType(token.type);
+    return parameter;
+}
+
+function resolveProperty(token: ts.PropertyDeclaration): Property {
+    let name = resolveName(token.name as any);
+    let stage: number = 0;
+    let property = new Property();
+    property.Name = name;
+    for (let item of token.getChildren()) {
+        switch (stage) {
+            case 0: {
+                switch (item.kind) {
+                    case ts.SyntaxKind.ColonToken: {
+                        ++stage; // 0 -> 1
+                    } break;
+                }
+            } break;
+            case 1: {
+                switch (item.kind) {
+                    case ts.SyntaxKind.ColonToken: 
+                    case ts.SyntaxKind.SemicolonToken:
+                        break;
+                    default: {
+                        property.Type = resolveType(item);
+                        ++stage; // 1 -> 2
+                    } break;
+                }
+            } break;
+        }
+    }
+    return property;
+}
+
+function resolveType(token: ts.Node): Type {
+    switch (token.kind) {
+        case ts.SyntaxKind.BooleanKeyword: {
+            return BooleanType;
+        } break;
+        case ts.SyntaxKind.StringKeyword: {
+            return StringType;
+        } break;
+        case ts.SyntaxKind.NumberKeyword: {
+            return FloatType;
+        } break;
+        case ts.SyntaxKind.TypeReference: {
+            return resolveTypeReference(token as any);
+        } break;
+        case ts.SyntaxKind.ArrayType: {
+            return resolveArrayType(token as any);
+        } break;
+        default: {
+            throw `resolveType: Unexpected token kind ${SyntaxKindMap[token.kind]} => '${token.getFullText()}'`;
+        } break;
+    }
+}
+
+function resolveArrayType(token: ts.ArrayTypeNode): Type {
+    let typeInstance = new Type('Array');
+    typeInstance.IsGeneric = true;
+    typeInstance.GenericDefinition = ArrayType;
+    typeInstance.GenericArguments = [resolveType(token.elementType)];
+    return typeInstance;
+}
+
+function resolveTypeReference(token: ts.TypeNode): Type {
+    let t = new Type();
+    for (let item of token.getChildren()) {
+      switch (item.kind) {
+        case ts.SyntaxKind.Identifier: {
+          t.Name = resolveIdentifier(item as any);
+          t.FullName = [t.Name];
+        } break;
+        case ts.SyntaxKind.QualifiedName: {
+          t.FullName = resolveQualifiedName(item as any);
+        } break;
+        case ts.SyntaxKind.LessThanToken: {
+          t.IsGeneric = true;
+        } break;
+        case ts.SyntaxKind.SyntaxList: {
+          t.GenericArguments = resolveGenericArguments(item as any);
+        } break;
+      }
+    }
+    return t;
+} 
+
+function resolveTypeParameter(token: ts.TypeParameterDeclaration): Type {
+    let name = token.name.text;
+    let genericePlacerholder = new Type(name);
+    genericePlacerholder.IsGenericPlaceholder = true;
+    return genericePlacerholder;
+}
+
+function resolveGenericArguments(token: ts.SyntaxList): Type[] {
+    let types: Type[] = [];
+    for (let item of token.getChildren()) {
+    //   console.log('resolveGenericArguments:', SyntaxKindMap[item.kind], item.getFullText());
+      switch (item.kind) {
+        case ts.SyntaxKind.CommaToken: 
+            break;
+        default: {
+            types.push(resolveType(item as any));
+        } break;
+      }
+    }
+    return types;
+}
+
+function resolveQualifiedName(token: ts.QualifiedName): string[] {
+    let results: string[] = [];
+    switch (token.left.kind) {
+      case ts.SyntaxKind.QualifiedName: {
+        results.push(...resolveQualifiedName(token.left as any));
+      } break;
+      case ts.SyntaxKind.Identifier: {
+        results.push(resolveIdentifier(token.left as any));
+      } break;
+    }
+    switch (token.right.kind) {
+      case ts.SyntaxKind.Identifier: {
+        results.push(resolveIdentifier(token.right as any));
+      } break;
+    }
+    return results;
+}
+
+function resolveIdentifier(token: ts.Identifier): string {
+    return token.text;
+}
+
+function isAbstractClass(token: ts.ClassDeclaration) {
     if (token.modifiers) {
         for (let modifier of token.modifiers) {
             if (modifier.getText() == 'abstract') {
@@ -271,4 +278,11 @@ export function isAbstractClass(token: ts.ClassDeclaration) {
         }
     }
     return false;
+}
+
+function resolveName(name: ts.BindingName): string {
+    for (let child of name.getChildren()) {
+        console.log('resolveName:', child.getFullText(), SyntaxKindMap[child.kind])
+    }
+    return name.getText();
 }

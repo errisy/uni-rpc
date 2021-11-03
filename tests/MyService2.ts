@@ -13,7 +13,7 @@ namespace MyService {
 
 
 namespace USE {
-    export class Tom {
-
+    export class Tom<Thrift> {
+        value: List<Thrift[]>;
     }
 }

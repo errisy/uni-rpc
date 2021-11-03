@@ -89,23 +89,24 @@ const builder = new SourceFileResovler();
 
 
 function emit(sourceFile: ts.SourceFile) {
-
-  console.log("sourceFile['SourceFileCount']:", global['SourceFileCount']);
-
-  global['SourceFileCount'] = global['SourceFileCount'] - 1;
-
-  console.log('./uni-rpc.yaml', config);
+  // console.log('./uni-rpc.yaml', config);
   ClearTargets(config);
-  if (sourceFile.fileName.toLowerCase().endsWith('.ts')) {
+  let lowerFilename = sourceFile.fileName.toLowerCase();
+
+  if (lowerFilename.endsWith('.ts') && !lowerFilename.endsWith('.d.ts')) {
+    global['SourceFileCount'] = global['SourceFileCount'] - 1;
     builder.resolveSourceFile(sourceFile);
+    if (global['SourceFileCount'] == 0) {
+      console.log('builder.Children.size:', builder.Children.size);
+      let results: Namespace[] = [];
+      for (let key of builder.Children.keys()) {
+        // console.log(JSON.stringify(builder.Children.get(key), null, 4));
+        results.push(builder.Children.get(key));
+      }
+      WriteFile('./uni-rpc.json', JSON.stringify(results, null, 4));
+    }
   }
 
-  if (global['SourceFileCount'] == 0) {
-    console.log('builder.Children.size:', builder.Children.size);
-    console.log(JSON.stringify(builder.Children, null, 4));
-    WriteFile('./uni-rpc.json', JSON.stringify(builder.Children, null, 4));
-  }
-  
   return sourceFile;
 }
 
@@ -118,88 +119,3 @@ const transformer: ts.TransformerFactory<ts.SourceFile> = () => {
   };
   
 export default transformer;
-
-
-// let filecount: number = 0;
-
-// function writeOutput() {
-//   console.log(JSON.stringify(builder.Children, null, 4));
-//   WriteFile('./uni-rpc.json', JSON.stringify(builder.Children, null, 4));
-// }
-
-// function transformAst(this: typeof ts, context: ts.TransformationContext) {
-//   const tsInstance = this;
-//   /* Transformer Function */
-//   return (sourceFile: ts.SourceFile) => {
-//     builder.resolveSourceFile(sourceFile);
-//     if (filecount-- == 0) writeOutput();
-//     return sourceFile;
-//   }
-// }
-
-// function getPatchedHost(
-//   maybeHost: ts.CompilerHost | undefined,
-//   tsInstance: typeof ts,
-//   compilerOptions: ts.CompilerOptions
-// ): ts.CompilerHost & { fileCache: Map<string, ts.SourceFile> }
-// {
-//   const fileCache = new Map();
-//   const compilerHost = maybeHost ?? tsInstance.createCompilerHost(compilerOptions, true);
-//   const originalGetSourceFile = compilerHost.getSourceFile;
-
-//   return Object.assign(compilerHost, {
-//     getSourceFile(fileName: string, languageVersion: ts.ScriptTarget) {
-//       fileName = ts.sys.resolvePath(fileName);
-//       console.log('fileName:', fileName);
-//       if (fileCache.has(fileName)) return fileCache.get(fileName);
-
-//       const sourceFile = originalGetSourceFile.apply(void 0, Array.from(arguments) as any);
-//       fileCache.set(fileName, sourceFile);
-
-//       return sourceFile;
-//     },
-//     fileCache
-//   });
-// }
-
-
-// export default function(program: ts.Program, 
-//   host: ts.CompilerHost | undefined, 
-//   options: PluginConfig, 
-//   { ts: tsInstance }: ProgramTransformerExtras) {
-//   console.log(typeof program);
-  
-//   for (let sourceFile of program.getSourceFiles()) {
-//     if (sourceFile.fileName.toLowerCase().endsWith('.d.ts')) continue;
-//     if (sourceFile.fileName.toLowerCase().endsWith('.ts')) {
-//       ++filecount;
-//       console.log('sourcefile.text:',  sourceFile.text);
-//     } 
-//   }
-
-
-
-//   const compilerOptions = program.getCompilerOptions();
-//   const compilerHost = getPatchedHost(host, tsInstance, compilerOptions);
-//   const rootFileNames = program.getRootFileNames().map(tsInstance.normalizePath);
-
-//   /* Transform AST */
-//   const transformedSource = tsInstance.transform(
-//     /* sourceFiles */ program.getSourceFiles().filter(sourceFile => rootFileNames.includes(sourceFile.fileName)),
-//     /* transformers */ [ transformAst.bind(tsInstance) ],
-//     compilerOptions
-//   ).transformed;
-
-//   /* Render modified files and create new SourceFiles for them to use in host's cache */
-//   // const { printFile } = tsInstance.createPrinter();
-//   // console.log('printFile', printFile)
-//   // for (const sourceFile of transformedSource) {
-//   //   const { fileName, languageVersion } = sourceFile;
-//   //   const updatedSourceFile = tsInstance.createSourceFile(fileName, printFile(sourceFile), languageVersion);
-//   //   compilerHost.fileCache.set(fileName, updatedSourceFile);
-//   // }
-
-//   /* Re-create Program instance */
-//   return tsInstance.createProgram(rootFileNames, compilerOptions, compilerHost);
-
-// }

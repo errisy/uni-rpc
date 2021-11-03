@@ -5,10 +5,6 @@ export default function(program: ts.Program,
     host: ts.CompilerHost | undefined, 
     options: PluginConfig, 
     { ts: tsInstance }: ProgramTransformerExtras) {
-    // console.log(typeof program);
-
-    console.log(program.getSourceFiles().map(file => file.fileName).join('\n'));
-    
     let files = program.getSourceFiles()
         .filter(file => {
             let name = file.fileName.toLowerCase();
