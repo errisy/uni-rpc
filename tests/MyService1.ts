@@ -3,8 +3,11 @@ namespace MyService {
 
     export namespace SubService {
         export class SubMessage<T> {
-
+            message: Message;
         }
+        // export class Message {
+
+        // }
     }
 
     export abstract class DevService<Dog> {
@@ -15,13 +18,14 @@ namespace MyService {
         abstract AB(my: double): float;
         abstract Gap(value: integer, enabled: boolean): List<long>;
         abstract Release<Cat> (cat: Cat, dog: Dog): bytes;
+        abstract GetMessage(): Message;
     }
 
     export class Message {
         name: string;
         value: integer;
         tested: boolean;
-        sub: MyService.SubService.SubMessage<MyService.Message>;
+        sub: SubService.SubMessage<Message>;
     }
 }
 

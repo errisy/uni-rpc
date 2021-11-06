@@ -12,7 +12,7 @@ export class Namespace implements ILocalNameResolver{
     Namespaces: Map<string, Namespace> = new Map();
     Messages: Message[] = [];
     Services: Service[] = [];
-    Children: Map<string, Message | Service | Type> = new Map();
+    Children: Map<string, Namespace | Message | Service | Type> = new Map();
     Parent: ILocalNameResolver;
     get NamespaceName(): string {
         return this.Fullname.join('.');

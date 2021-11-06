@@ -245,25 +245,25 @@ function resolveArrayType(token: ts.ArrayTypeNode): Type {
 }
 
 function resolveTypeReference(token: ts.TypeNode): Type {
-    let t = new Type();
+    let referenceType = new Type();
     for (let item of token.getChildren()) {
       switch (item.kind) {
         case ts.SyntaxKind.Identifier: {
-          t.Name = resolveIdentifier(item as any);
-          t.FullName = [t.Name];
+          referenceType.Name = resolveIdentifier(item as any);
+          referenceType.FullName = [referenceType.Name];
         } break;
         case ts.SyntaxKind.QualifiedName: {
-          t.FullName = resolveQualifiedName(item as any);
+          referenceType.FullName = resolveQualifiedName(item as any);
         } break;
         case ts.SyntaxKind.LessThanToken: {
-          t.IsGeneric = true;
+          referenceType.IsGeneric = true;
         } break;
         case ts.SyntaxKind.SyntaxList: {
-          t.GenericArguments = resolveGenericArguments(item as any);
+          referenceType.GenericArguments = resolveGenericArguments(item as any);
         } break;
       }
     }
-    return t;
+    return referenceType;
 } 
 
 function resolveTypeParameter(token: ts.TypeParameterDeclaration): Type {

@@ -1,11 +1,17 @@
 {
     "name": "transformers",
+    "scripts": {
+        "compile": "tsc",
+        "test": "jest bin"
+    },
     "devDependencies": {
         "@types/node": "16.11.6",
+        "@types/jest": "27.0.2",
         "typescript": "4.4.4",
         "tslib": "2.3.1",
         "ts-expose-internals": "4.4.4",
         "ts-patch": "2.0.1",
-        "yaml": "1.10.2"
+        "yaml": "1.10.2",
+        "jest": "27.3.1"
     }
 }
