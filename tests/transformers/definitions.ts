@@ -9,7 +9,7 @@ export class Namespace implements ILocalNameResolver{
     Reflection: 'Namespace' = 'Namespace';
     Name: string;
     Fullname: string[];
-    Namespaces: Namespace[] = [];
+    Namespaces: Map<string, Namespace> = new Map();
     Messages: Message[] = [];
     Services: Service[] = [];
     Children: Map<string, Message | Service | Type> = new Map();
@@ -17,30 +17,63 @@ export class Namespace implements ILocalNameResolver{
     get NamespaceName(): string {
         return this.Fullname.join('.');
     }
-    isSameNamespace(fullname: string[]): boolean {
-        if (fullname.length != this.Fullname.length) return false;
-        for (let i = 0; i < fullname.length; i++) {
-            if (fullname[i] != this.Fullname[i]) return false;
+    /** The fullname may not be the full namespace, it just need to match the ending ones. */
+    matchNamespace(fullname: string[]): boolean {
+        let namespaceLayerCount = this.Fullname.length, nameLayerCount = fullname.length - 1;
+        let maxLayerCount = Math.min(nameLayerCount, namespaceLayerCount);
+        for (let i = 0; i < maxLayerCount; i++) {
+            if (this.Fullname[namespaceLayerCount - 1 - i] != fullname[nameLayerCount - 1 - i]) {
+                return false;
+            }
         }
         return true;
+    }
+    // find Partially matched indices
+    *findMatchIndices(fullname: string[]): IterableIterator<number> {
+        for (let index = 0; index < fullname.length - 1; ++index) {
+            if (fullname[index] == this.Name) {
+                yield index;
+            }
+        }
+    }
+    tryMatchParent(parentName: string[]) {
+        if (parentName.length == 0) return true;
+        let name = parentName.pop(); // Remove and get the last section for matching the current
+        if (this.Name != name) return false;
+        if (parentName.length == 0) return true;
+        if (!this.Parent) return false; // When this is the top level namespace.
+        return (this.Parent as Namespace).tryMatchParent(parentName); // When there is parent namespace to match;
+    }
+    topdownResolve(fullname: string[]): Type | undefined {
+        if (fullname.length == 1 && this.Children.has(fullname[0]) && this.Children.get(fullname[0]).Reflection == 'Message') {
+            return (this.Children.get(fullname[0]) as any as Message).Type;
+        } else if (fullname.length > 1 && this.Namespaces.has(fullname[0])) {
+            return this.Namespaces.get(fullname[0]).topdownResolve(fullname.slice(1));
+        }
+        return undefined;
     }
     resolve(fullname: string[]): Type {
         if (fullname.length == 1) {
             let name = fullname[0];
             if (this.Children.has(name) && this.Children.get(name).Reflection == 'Message') {
                 return (this.Children.get(name) as any as Message).Type;
-            } else if (this.Parent) {
-                return this.Parent.resolve(fullname);
-            } else {
-                throw `Unresolved Symbol Name "${fullname.join('.')}"`;
             }
-        } else if (this.isSameNamespace(fullname)) {
-            let name = fullname[fullname.length - 1];
-            if (this.Children.has(name) && this.Children.get(name).Reflection == 'Message') {
-                return (this.Children.get(name) as any as Message).Type;
-            } else {
-                throw `Unresolved Symbol Name "${fullname.join('.')}"`;
+        } else {
+            for (let index of this.findMatchIndices(fullname)) {
+                // Before matching descendents, we have to match ancestors first.
+                if (this.tryMatchParent(fullname.slice(0, index))) {
+                    let resolved: Type = undefined;
+                    if (resolved = this.topdownResolve(fullname.slice(index + 1))) {
+                        return resolved;
+                    }
+                }
             }
+        }
+        // If there is parent, try match parent.
+        if (this.Parent) {
+            return this.Parent.resolve(fullname);
+        } else {
+            throw `Unresolved Type "${fullname.join('.')}."`;
         }
     }
     build(parent: ILocalNameResolver) {
@@ -87,6 +120,8 @@ export class Message implements ILocalNameResolver {
     Parent: ILocalNameResolver;
     buildChildren() {
         if (this.IsGeneric) {
+            // The Message type itself can be a valid type
+            this.Children.set(this.Name, this.Type);
             for (let genericArgument of this.GenericArguments) {
                 this.Children.set(genericArgument.Name,  genericArgument);
             }
@@ -126,7 +161,7 @@ export class Property implements ILocalNameResolver {
         this.Type.build(this);
     }
     link() {
-        this.Type.link
+        this.Type.link();
     }
 }
 
@@ -148,9 +183,13 @@ export class Service implements ILocalNameResolver{
         }
     }
     resolve(fullname: string[]): Type {
-        if (fullname.length == 1 && this.Children.has(fullname[0])) {
-            // it is generic parameter type
-            return this.Children.get(fullname[0]);
+        if (this.IsGeneric) {
+            if (fullname.length == 1 && this.Children.has(fullname[0])) {
+                // it is generic parameter type
+                return this.Children.get(fullname[0]);
+            } else {
+                return this.Parent.resolve(fullname);
+            }
         } else {
             return this.Parent.resolve(fullname);
         }
@@ -185,12 +224,19 @@ export class Method implements ILocalNameResolver {
         }
     }
     resolve(fullname: string[]): Type {
-        if (fullname.length == 1 && this.Children.has(fullname[0])) {
-            // it is generic parameter type
-            return this.Children.get(fullname[0]);
+        // If the Method is generic, it can resolve generic argument type
+        if (this.IsGeneric) {
+            // Method can only resolve generic Argument Type by name.
+            if (fullname.length == 1 && this.Children.has(fullname[0])) {
+                // it is generic parameter type
+                return this.Children.get(fullname[0]);
+            } else {
+                return this.Parent.resolve(fullname);
+            }
         } else {
             return this.Parent.resolve(fullname);
         }
+
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
@@ -211,23 +257,15 @@ export class Parameter implements ILocalNameResolver{
     Type: Type;
     Parent: ILocalNameResolver;
     resolve(fullname: string[]): Type {
-        if (fullname.length == 1 && this.Children.has(fullname[0])) {
-            // it is generic parameter type
-            return this.Children.get(fullname[0]);
-        } else {
-            return this.Parent.resolve(fullname);
-        }
+        // Only generic argument can resolve type. This is the function parameter.
+        return this.Parent.resolve(fullname);
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
-        for (let child of this.Children.values()) {
-            (child as any as ILocalNameResolver).build(this);
-        }
+        this.Type.build(this);
     }
     link() {
-        for (let child of this.Children.values()) {
-            (child as any as ILocalNameResolver).link();
-        }
+        this.Type.link();
     }
 }
 
@@ -250,7 +288,7 @@ export class Type implements ILocalNameResolver{
         this.IsGenericDefinition = isGenericDefinition;
     }
     resolve(fullname: string[]): Type {
-
+        return this.Parent.resolve(fullname);
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
@@ -262,7 +300,16 @@ export class Type implements ILocalNameResolver{
         }
     }
     link() {
-        
+        if (this.IsGeneric) {
+            // In the case of generic type, we need resolve the generic definition and generic arguments separately.
+            this.GenericDefinition.link();
+            for (let genericArugment of this.GenericArguments) {
+                genericArugment.link();
+            }
+        } else {
+            // In the case of non-generic type, we only need to resolve to the definition
+            this.Reference = this.resolve(this.FullName);
+        }
     }
 }
 

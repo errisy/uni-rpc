@@ -1,11 +1,50 @@
-import {Namespace, Service, Message, Method, Parameter as Parameter, Property, Type, BooleanType, StringType, FloatType, DoubleType, IntegerType, LongType, ListType, DictType, ArrayType} from './definitions';
+import {ILocalNameResolver, Namespace, Service, Message, Method, Parameter as Parameter, Property, Type,
+    BooleanType, StringType, FloatType, DoubleType, IntegerType, LongType, BytesType, ListType, DictType, ArrayType} from './definitions';
 import * as ts from 'typescript';
 import { SyntaxKindMap } from './SyntaxKindMap';
 
-export class SourceFileResovler {
+export class SourceFileResovler implements ILocalNameResolver {
     NamespaceStack: Namespace[] = [];
     Children: Map<string, Namespace> = new Map();
+    Parent: ILocalNameResolver; // This will not be set, because this is the root node of the tree.
+    PredefinedTypes: Map<string, Type> = new Map();
     constructor() {
+        this.PredefinedTypes.set('boolean', BooleanType);
+        this.PredefinedTypes.set('string', StringType);
+        this.PredefinedTypes.set('float', FloatType);
+        this.PredefinedTypes.set('double', DoubleType);
+        this.PredefinedTypes.set('integer', IntegerType);
+        this.PredefinedTypes.set('long', LongType);
+        this.PredefinedTypes.set('bytes', BytesType);
+        this.PredefinedTypes.set('List', ListType);
+        this.PredefinedTypes.set('Dict', DictType);
+        this.PredefinedTypes.set('Array', ArrayType);
+    }
+
+    resolve(fullname: string[]): Type {
+        if (fullname.length == 1 && this.PredefinedTypes.has(fullname[0])) {
+            return this.PredefinedTypes.get(fullname[0]);
+        } else if (fullname.length > 1 && this.Children.has(fullname.slice(0,fullname.length - 1).join('.'))) {
+            let resolved: Type | undefined;
+            if (resolved = this.Children.get(
+                    fullname.slice(0,fullname.length - 1).join('.')).topdownResolve(fullname.slice(1)
+                )) {
+                return resolved;
+            }
+        }
+        throw `Unresolved Type "${fullname.join('.')}."`;
+    }
+
+    build(parent: ILocalNameResolver): void {
+        for (let child of this.Children.values()) {
+            child.build(this);
+        }
+    }
+
+    link(): void {
+        for (let child of this.Children.values()) {
+            child.link();
+        }
     }
 
     resolveSourceFile(sourceFile: ts.SourceFile) {
@@ -37,6 +76,9 @@ export class SourceFileResovler {
             nsInstance.Name = fullname[fullname.length - 1];
             nsInstance.Fullname = fullname;
             this.Children.set(nsName, nsInstance);
+            if (this.currentNamespace) {
+                this.currentNamespace.Namespaces.set(nsName, nsInstance);
+            }
             return nsInstance;
         }
     }
