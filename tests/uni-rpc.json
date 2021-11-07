@@ -1,7 +1,7 @@
 [
     {
         "Reflection": "Namespace",
-        "Namespaces": [],
+        "Namespaces": {},
         "Messages": [
             {
                 "Reflection": "Message",
@@ -49,7 +49,6 @@
                             "IsGeneric": true,
                             "IsGenericPlaceholder": false,
                             "FullName": [
-                                "MyService",
                                 "SubService",
                                 "SubMessage"
                             ],
@@ -58,8 +57,8 @@
                                     "Reflection": "Type",
                                     "IsGeneric": false,
                                     "IsGenericPlaceholder": false,
+                                    "Name": "Message",
                                     "FullName": [
-                                        "MyService",
                                         "Message"
                                     ]
                                 }
@@ -159,13 +158,7 @@
                                 "Dict"
                             ],
                             "GenericArguments": [
-                                {
-                                    "Reflection": "Type",
-                                    "IsGeneric": false,
-                                    "IsGenericPlaceholder": false,
-                                    "Name": "string",
-                                    "SystemType": "string"
-                                },
+                                null,
                                 {
                                     "Reflection": "Type",
                                     "IsGeneric": false,
@@ -214,28 +207,14 @@
                                     ]
                                 }
                             }
-                        ],
-                        "ReturnType": {
-                            "Reflection": "Type",
-                            "IsGeneric": false,
-                            "IsGenericPlaceholder": false,
-                            "Name": "boolean",
-                            "SystemType": "boolean"
-                        }
+                        ]
                     },
                     {
                         "Reflection": "Method",
                         "GenericArguments": [],
                         "Children": {},
                         "Name": "Get",
-                        "Parameters": [],
-                        "ReturnType": {
-                            "Reflection": "Type",
-                            "IsGeneric": false,
-                            "IsGenericPlaceholder": false,
-                            "Name": "boolean",
-                            "SystemType": "boolean"
-                        }
+                        "Parameters": []
                     },
                     {
                         "Reflection": "Method",
@@ -256,14 +235,7 @@
                         "GenericArguments": [],
                         "Children": {},
                         "Name": "Test",
-                        "Parameters": [],
-                        "ReturnType": {
-                            "Reflection": "Type",
-                            "IsGeneric": false,
-                            "IsGenericPlaceholder": false,
-                            "Name": "string",
-                            "SystemType": "string"
-                        }
+                        "Parameters": []
                     },
                     {
                         "Reflection": "Method",
@@ -316,14 +288,7 @@
                             },
                             {
                                 "Reflection": "Argument",
-                                "Name": "enabled",
-                                "Type": {
-                                    "Reflection": "Type",
-                                    "IsGeneric": false,
-                                    "IsGenericPlaceholder": false,
-                                    "Name": "boolean",
-                                    "SystemType": "boolean"
-                                }
+                                "Name": "enabled"
                             }
                         ],
                         "ReturnType": {
@@ -397,6 +362,22 @@
                                 "bytes"
                             ]
                         }
+                    },
+                    {
+                        "Reflection": "Method",
+                        "GenericArguments": [],
+                        "Children": {},
+                        "Name": "GetMessage",
+                        "Parameters": [],
+                        "ReturnType": {
+                            "Reflection": "Type",
+                            "IsGeneric": false,
+                            "IsGenericPlaceholder": false,
+                            "Name": "Message",
+                            "FullName": [
+                                "Message"
+                            ]
+                        }
                     }
                 ],
                 "GenericArguments": [
@@ -423,15 +404,34 @@
         "Name": "MyService",
         "Fullname": [
             "MyService"
-        ]
+        ],
+        "Parent": {
+            "NamespaceStack": [],
+            "Children": {},
+            "PredefinedTypes": {}
+        }
     },
     {
         "Reflection": "Namespace",
-        "Namespaces": [],
+        "Namespaces": {},
         "Messages": [
             {
                 "Reflection": "Message",
-                "Properties": [],
+                "Properties": [
+                    {
+                        "Reflection": "Property",
+                        "Name": "message",
+                        "Type": {
+                            "Reflection": "Type",
+                            "IsGeneric": false,
+                            "IsGenericPlaceholder": false,
+                            "Name": "Message",
+                            "FullName": [
+                                "Message"
+                            ]
+                        }
+                    }
+                ],
                 "GenericArguments": [
                     {
                         "Reflection": "Type",
@@ -464,7 +464,7 @@
     },
     {
         "Reflection": "Namespace",
-        "Namespaces": [],
+        "Namespaces": {},
         "Messages": [
             {
                 "Reflection": "Message",
@@ -486,14 +486,6 @@
                                     "IsGeneric": true,
                                     "IsGenericPlaceholder": false,
                                     "Name": "Array",
-                                    "GenericDefinition": {
-                                        "Reflection": "Type",
-                                        "IsGeneric": false,
-                                        "IsGenericDefinition": true,
-                                        "IsGenericPlaceholder": false,
-                                        "Name": "Array",
-                                        "SystemType": "Array"
-                                    },
                                     "GenericArguments": [
                                         {
                                             "Reflection": "Type",

@@ -1,5 +1,4 @@
 import * as ts from 'typescript';
-import { ProgramTransformerExtras, PluginConfig } from 'ts-patch';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
@@ -7,23 +6,7 @@ import { Namespace, Service, Message, Property, Method, Type } from './definitio
 import { SyntaxKindMap } from './SyntaxKindMap';
 import { SourceFileResovler } from './resolvers';
 import {} from 'ts-expose-internals';
-
-interface Target {
-    cs: string | string[];
-    ts: string | string[];
-    py: string | string[];
-    ja: string | string[];
-    /** List of selected namespaces */
-    ns: string[];
-    csCode?: string;
-    tsCode?: string;
-    pyCode?: string;
-    jaCode?: string;
-}
-
-interface RPC {
-    rpc: Target[];
-}
+import { RPC, Target } from './rpc-configuration';
 
 function readRPCConfig() {
   let data = fs.readFileSync('uni-rpc.yaml', 'utf-8');
@@ -86,6 +69,19 @@ function ClearTargets(config: RPC) {
 const config = readRPCConfig();
 const resolver = new SourceFileResovler();
 
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key, value) => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+};
+
 
 
 function emit(sourceFile: ts.SourceFile) {
@@ -105,7 +101,9 @@ function emit(sourceFile: ts.SourceFile) {
       }
       resolver.build(undefined);
       resolver.link();
-      WriteFile('./uni-rpc.json', JSON.stringify(results, null, 4));
+      //  util.inspect(results, true, 12)
+      
+      WriteFile('./uni-rpc.json', JSON.stringify(results, getCircularReplacer(), 4));
     }
   }
 
