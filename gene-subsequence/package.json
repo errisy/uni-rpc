@@ -1,0 +1,6 @@
+{
+    "name": "gene-subsequence",
+    "devDependencies": {
+        "@types/node": "^13.9.2"
+    }
+}

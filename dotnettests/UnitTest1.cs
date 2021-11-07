@@ -3,9 +3,15 @@ using System.Diagnostics;
 using Xunit;
 using System.Text.Json;
 using Shouldly;
+using vbpackage1;
 
 namespace dotnettests
 {
+    public class BaseMessage
+    {
+        public string name { get; set; }
+        public JsonElement value { get; set; }
+    }
 
     public class Person {
         public int age { get; set; }
@@ -32,6 +38,8 @@ namespace dotnettests
         ""gender"": ""male""
     }
 }";
+
+
             var element = JsonSerializer.Deserialize<JsonElement>(json);
 
             var name = element.GetProperty<string>("name");
@@ -41,6 +49,22 @@ namespace dotnettests
             person.age.ShouldBe(30);
             person.gender.ShouldBe("male");
 
+            var message = JsonSerializer.Deserialize<BaseMessage>(json);
+
+            message.name.ShouldBe("tom");
+            var personViaMessage = JsonSerializer.Deserialize<Person>(message.value.GetRawText());
+            personViaMessage.age.ShouldBe(30);
+            personViaMessage.gender.ShouldBe("male");
+
+            //personViaMessage.gender.ShouldBe("female");
+
+            //Debugger.Break();
+        }
+
+        [Fact(DisplayName = "Test VB Code")]
+        void TestVBCode ()
+        {
+            MyClassTest.Add(3, 5).ShouldBe(8);
         }
     }
 }

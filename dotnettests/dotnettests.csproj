@@ -20,4 +20,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\vbpackage\vbpackage1\vbpackage1.vbproj" />
+  </ItemGroup>
+
 </Project>
