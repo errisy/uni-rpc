@@ -24,21 +24,11 @@ namespace UniRpc.WebApplication
 
         protected Dictionary<string, WebSocketServiceBase> Services = new Dictionary<string, WebSocketServiceBase>();
 
-        public WebSocketService RegisterService(WebSocketServiceBase service)
+        public WebSocketService RegisterService<T>(T service) where T : WebSocketServiceBase
         {
             Services.Add(service.__name, service);
             return this;
         }
-
-        public WebSocketService RegisterServices(params WebSocketServiceBase[] services)
-        {
-            foreach (var service in services)
-            {
-                Services.Add(service.__name, service);
-            }
-            return this;
-        }
-
 
         public WebSocketService(HttpContext context, WebSocket websocket)
         {
@@ -70,7 +60,11 @@ namespace UniRpc.WebApplication
                 {
                     if (Services.ContainsKey(message.Service))
                     {
-                        Services[message.Service].__invoke(message);
+                        var type = Services[message.Service];
+                        string user;
+                        string group;
+                        type.GetConstructor(new Type[] { types }).Invoke(); 
+                        .__invoke(message);
                     }
                 });
         }

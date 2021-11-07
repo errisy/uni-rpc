@@ -12,6 +12,8 @@ namespace UniRpc.WebApplication
         public string Id { get; set; }
         public string Service { get; set; }
         public string Method { get; set; }
+        public string User { get; set; }
+        public string Group { get; set; }
         public string[] GenericArguments { get; set; }
         public JsonElement Payload { get; set; }
     }
@@ -21,8 +23,9 @@ namespace UniRpc.WebApplication
         public string __name { get; set; }
         public bool __isGeneric { get; set; }
         public List<string> __genericArguments { get; set; }
-
         public Subject<BaseMessage> __outgoing { get; set; }
+        public string __user { get; set; }
+        public string __group { get; set; }
 
         public virtual BaseMessage __invoke(BaseMessage message)
         {
