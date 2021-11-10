@@ -30,6 +30,9 @@ export class Namespace implements ILocalNameResolver{
     }
     // find Partially matched indices
     *findMatchIndices(fullname: string[]): IterableIterator<number> {
+        if (this.Children.has(fullname[0])) {
+            yield -1;
+        }
         for (let index = 0; index < fullname.length - 1; ++index) {
             if (fullname[index] == this.Name) {
                 yield index;
@@ -47,8 +50,10 @@ export class Namespace implements ILocalNameResolver{
     topdownResolve(fullname: string[]): Type | undefined {
         if (fullname.length == 1 && this.Children.has(fullname[0]) && this.Children.get(fullname[0]).Reflection == 'Message') {
             return (this.Children.get(fullname[0]) as any as Message).Type;
-        } else if (fullname.length > 1 && this.Namespaces.has(fullname[0])) {
-            return this.Namespaces.get(fullname[0]).topdownResolve(fullname.slice(1));
+        // } else if (fullname.length > 1 && this.Name == fullname[0] && this.Children.has(fullname[1]) && this.Children.has(fullname[1])['Reflection'] == 'Namespace') {
+        //     return (this.Children.get(fullname[1]) as Namespace).topdownResolve(fullname.slice(2));
+        } else if (fullname.length > 1 && this.Children.has(fullname[0]) && this.Children.has(fullname[0])['Reflection'] == 'Namespace') {
+            return (this.Children.get(fullname[0]) as Namespace).topdownResolve(fullname.slice(1));
         }
         return undefined;
     }
@@ -59,9 +64,17 @@ export class Namespace implements ILocalNameResolver{
                 return (this.Children.get(name) as any as Message).Type;
             }
         } else {
+            let isSubServiceSubMessage = this.Name == 'MyService' && fullname.length == 2 && fullname[0] == 'SubService' && fullname[1] == 'SubMessage'; 
+            if (isSubServiceSubMessage) {
+                console.log('isSubServiceSubMessage:', isSubServiceSubMessage);
+                for (let key of this.Children.keys()) {
+                    console.log(key, '==>', this.Children.get(key)['Fullname']);
+                }
+            }
             for (let index of this.findMatchIndices(fullname)) {
                 // Before matching descendents, we have to match ancestors first.
-                if (this.tryMatchParent(fullname.slice(0, index))) {
+                if (isSubServiceSubMessage) console.log('isSubServiceSubMessage index:', index);
+                if (index < 0 || this.tryMatchParent(fullname.slice(0, index))) {
                     let resolved: Type = undefined;
                     if (resolved = this.topdownResolve(fullname.slice(index + 1))) {
                         return resolved;
@@ -76,8 +89,15 @@ export class Namespace implements ILocalNameResolver{
             throw `Unresolved Type "${fullname.join('.')}."`;
         }
     }
+    buildChildren() {
+        for (let key of this.Namespaces.keys()) {
+            let namespaceInstance = this.Namespaces.get(key);
+            this.Children.set(namespaceInstance.Name, namespaceInstance);
+        }
+    }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
+        this.buildChildren();
         for (let child of this.Children.values()) {
             (child as any as ILocalNameResolver).build(this);
         }
@@ -189,6 +209,7 @@ export class Service implements ILocalNameResolver{
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
+        this.buildChildren();
         for (let method of this.Methods) {
             method.build(this);
         }
@@ -220,6 +241,11 @@ export class Method implements ILocalNameResolver {
         // If the Method is generic, it can resolve generic argument type
         if (this.IsGeneric) {
             // Method can only resolve generic Argument Type by name.
+            // try print all children
+            console.log('Generic Method:', this.Name);
+            for (let key of this.Children.keys()) {
+                console.log(key, '==>', this.Children.get(key));
+            }
             if (fullname.length == 1 && this.Children.has(fullname[0])) {
                 // it is generic parameter type
                 return this.Children.get(fullname[0]);
@@ -233,6 +259,7 @@ export class Method implements ILocalNameResolver {
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
+        this.buildChildren();
         for (let parameter of this.Parameters) {
             parameter.build(this);
         }

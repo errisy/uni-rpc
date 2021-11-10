@@ -15,7 +15,7 @@ export class CSharpBuilder {
                 case 'service': {
                     this.copyServiceFiles(rootDirectory);
                     for (let childNamespace of this.resolver.Children.values()) {
-                        childNamespace.emitServiceFiles(rootDirectory);
+                        childNamespace.emitCSharpServiceFiles(rootDirectory);
                     }
                 } break;
                 case 'client': {
@@ -39,8 +39,8 @@ export class CSharpBuilder {
 
 declare module './definitions' {
     export interface Namespace {
-        emitServiceFiles(rootDirectory: string): void;
-        emitClientFiles(rootDirectory: string): void;
+        emitCSharpServiceFiles(rootDirectory: string): void;
+        emitCSharpClientFiles(rootDirectory: string): void;
     }
     export interface Service {
         emitCSharpServiceFile(rootDirectory: string): void;
@@ -103,12 +103,12 @@ module CodeGeneration {
 
 
 class NamespaceEmitter extends Namespace {
-    emitServiceFiles(rootDirectory: string) {
+    emitCSharpServiceFiles(rootDirectory: string) {
         for (let service of this.Services) {
             service.emitCSharpServiceFile(rootDirectory);
         }
     }
-    emitClientFiles(rootDirectory: string) {
+    emitCSharpClientFiles(rootDirectory: string) {
         for (let service of this.Services) {
             service.emitCSharpClientFile(rootDirectory);
         }
@@ -198,5 +198,5 @@ Service.prototype.emitCSharpParameters = ServiceEmitter.prototype.emitCSharpPara
 Service.prototype.emitCSharpServiceInvokeMethod = ServiceEmitter.prototype.emitCSharpServiceInvokeMethod;
 Service.prototype.emitCSharpService = ServiceEmitter.prototype.emitCSharpService;
 
-Namespace.prototype.emitServiceFiles = NamespaceEmitter.prototype.emitServiceFiles;
-Namespace.prototype.emitClientFiles = NamespaceEmitter.prototype.emitClientFiles;
+Namespace.prototype.emitCSharpServiceFiles = NamespaceEmitter.prototype.emitCSharpServiceFiles;
+Namespace.prototype.emitCSharpClientFiles = NamespaceEmitter.prototype.emitCSharpClientFiles;

@@ -257,12 +257,13 @@ function resolveTypeReference(token: ts.TypeNode): Type {
         } break;
         case ts.SyntaxKind.QualifiedName: {
           referenceType.FullName = resolveQualifiedName(item as any);
+          referenceType.Name = referenceType.FullName[referenceType.FullName.length - 1];
         } break;
         case ts.SyntaxKind.LessThanToken: {
           referenceType.IsGeneric = true;
           let genericDefinition = new Type();
-          genericDefinition.Name = resolveIdentifier(item as any);
-          genericDefinition.FullName = [referenceType.Name];
+          genericDefinition.Name = referenceType.Name;
+          genericDefinition.FullName = referenceType.FullName;
           genericDefinition.IsGenericDefinition = true;
           referenceType.GenericDefinition = genericDefinition;
         } break;
@@ -289,6 +290,7 @@ function resolveGenericArguments(token: ts.SyntaxList): Type[] {
         case ts.SyntaxKind.CommaToken: 
             break;
         default: {
+            console.log('resolveGenericArguments, default:', SyntaxKindMap[item.kind], item.getFullText());
             types.push(resolveType(item as any));
         } break;
       }
