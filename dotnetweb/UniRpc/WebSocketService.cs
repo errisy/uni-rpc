@@ -63,8 +63,7 @@ namespace UniRpc.WebApplication
                         var type = Services[message.Service];
                         string user;
                         string group;
-                        type.GetConstructor(new Type[] { types }).Invoke(); 
-                        .__invoke(message);
+                        Services[message.Service].__invoke(message);
                     }
                 });
         }
