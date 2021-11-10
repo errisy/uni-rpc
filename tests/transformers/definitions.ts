@@ -316,3 +316,4 @@ export const BytesType = new Type('bytes', 'bytes');
 export const ListType = new Type('List', 'List', true);
 export const DictType = new Type('Dict', 'Dict', true);
 export const ArrayType = new Type('Array', 'Array', true);
+export const PromiseType = new Type('Promise', 'Promise', true);
