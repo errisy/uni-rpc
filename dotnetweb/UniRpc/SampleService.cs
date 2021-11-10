@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UniRpc.WebApplication;
 
-namespace dotnetweb.UniRpc
+namespace UniRpc.WebApplication
 {
 
     public class Person
@@ -47,5 +47,9 @@ namespace dotnetweb.UniRpc
         }
     }
 
-    
+    public class SampleServiceImpl: SampleService
+    {
+
+    }
+
 }

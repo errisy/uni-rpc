@@ -12,8 +12,6 @@ namespace UniRpc.WebApplication
         public string Id { get; set; }
         public string Service { get; set; }
         public string Method { get; set; }
-        public string User { get; set; }
-        public string Group { get; set; }
         public string[] GenericArguments { get; set; }
         public JsonElement Payload { get; set; }
     }

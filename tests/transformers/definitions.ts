@@ -131,9 +131,8 @@ export class Message implements ILocalNameResolver {
         if (fullname.length == 1 && this.Children.has(fullname[0])) {
             // it is generic parameter type
             return this.Children.get(fullname[0]);
-        } else {
-            return this.Parent.resolve(fullname);
         }
+        return this.Parent.resolve(fullname);
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
@@ -183,16 +182,10 @@ export class Service implements ILocalNameResolver{
         }
     }
     resolve(fullname: string[]): Type {
-        if (this.IsGeneric) {
-            if (fullname.length == 1 && this.Children.has(fullname[0])) {
-                // it is generic parameter type
-                return this.Children.get(fullname[0]);
-            } else {
-                return this.Parent.resolve(fullname);
-            }
-        } else {
-            return this.Parent.resolve(fullname);
+        if (this.IsGeneric && fullname.length == 1 && this.Children.has(fullname[0])) {
+            return this.Children.get(fullname[0]);
         }
+        return this.Parent.resolve(fullname);
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;

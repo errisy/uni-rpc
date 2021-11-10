@@ -61,8 +61,11 @@ namespace UniRpc.WebApplication
                     if (Services.ContainsKey(message.Service))
                     {
                         var type = Services[message.Service];
+<<<<<<< HEAD
                         string user;
                         string group;
+=======
+>>>>>>> bb99c968f4b849287cd86d5019fd75d8f59e2e49
                         Services[message.Service].__invoke(message);
                     }
                 });

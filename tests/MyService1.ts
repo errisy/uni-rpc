@@ -8,6 +8,16 @@ namespace MyService {
         // export class Message {
 
         // }
+        export namespace SubService {
+            export class SubMessage<T> {
+                message: Message;
+            }
+            export namespace SubService {
+                export class TestMessage {
+                    prop: SubMessage<string>;
+                }
+            }
+        }
     }
 
     export abstract class DevService<Dog> {

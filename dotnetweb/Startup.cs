@@ -8,8 +8,10 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
+using UniRpc.WebApplication;
 using UniRpc.WebApplication;
 
 namespace dotnetweb
@@ -52,7 +54,8 @@ namespace dotnetweb
                     {
                         WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
                         var service = new WebSocketService(context, webSocket);
-                        bag.Add(service);
+                        //bag.Add(service);
+                        service.RegisterService(new SampleServiceImpl());
                         await service.KeepReceiving();
                         //using ()
                         //{
