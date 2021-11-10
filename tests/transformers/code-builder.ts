@@ -7,8 +7,12 @@ export class CodeBuilder {
     addImport(value: string) {
         this.imports.add(value);
     }
-    appendLine(value: string) {
-        this.lines.push(value);
+    appendLine(value: string, indent: number = 0) {
+        let prefix = '';
+        for (let i = 0; i < indent; i++) {
+            prefix += '    ';
+        }
+        this.lines.push(prefix + value);
     }
     append(value: string) {
         if (this.lines.length == 0) {

@@ -1,5 +1,5 @@
 import {ILocalNameResolver, Namespace, Service, Message, Method, Parameter as Parameter, Property, Type,
-    BooleanType, StringType, FloatType, DoubleType, IntegerType, LongType, BytesType, ListType, DictType, ArrayType} from './definitions';
+    BooleanType, StringType, FloatType, DoubleType, IntegerType, LongType, BytesType, ListType, DictType, ArrayType, VoidType} from './definitions';
 import * as ts from 'typescript';
 import { SyntaxKindMap } from './SyntaxKindMap';
 
@@ -19,6 +19,7 @@ export class SourceFileResovler implements ILocalNameResolver {
         this.PredefinedTypes.set('List', ListType);
         this.PredefinedTypes.set('Dict', DictType);
         this.PredefinedTypes.set('Array', ArrayType);
+        this.PredefinedTypes.set('void', VoidType);
     }
 
     resolve(fullname: string[]): Type {
@@ -32,6 +33,7 @@ export class SourceFileResovler implements ILocalNameResolver {
                 return resolved;
             }
         }
+        console.trace(`Unresolved Type "${fullname.join('.')}."`);
         throw `Unresolved Type "${fullname.join('.')}."`;
     }
 
@@ -239,6 +241,7 @@ function resolveType(token: ts.Node): Type {
 function resolveArrayType(token: ts.ArrayTypeNode): Type {
     let typeInstance = new Type('Array');
     typeInstance.IsGeneric = true;
+    typeInstance.FullName = ['Array'];
     typeInstance.GenericDefinition = ArrayType;
     typeInstance.GenericArguments = [resolveType(token.elementType)];
     return typeInstance;
@@ -257,6 +260,11 @@ function resolveTypeReference(token: ts.TypeNode): Type {
         } break;
         case ts.SyntaxKind.LessThanToken: {
           referenceType.IsGeneric = true;
+          let genericDefinition = new Type();
+          genericDefinition.Name = resolveIdentifier(item as any);
+          genericDefinition.FullName = [referenceType.Name];
+          genericDefinition.IsGenericDefinition = true;
+          referenceType.GenericDefinition = genericDefinition;
         } break;
         case ts.SyntaxKind.SyntaxList: {
           referenceType.GenericArguments = resolveGenericArguments(item as any);

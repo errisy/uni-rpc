@@ -6,6 +6,7 @@ export interface Target {
     ja: string | string[];
     /** List of selected namespaces */
     ns: string[];
+    type: 'service' | 'client';
     csCode?: string;
     tsCode?: string;
     pyCode?: string;

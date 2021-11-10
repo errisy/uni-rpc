@@ -136,13 +136,13 @@ export class Message implements ILocalNameResolver {
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
-        for (let child of this.Children.values()) {
-            (child as any as ILocalNameResolver).build(this);
+        for (let property of this.Properties) {
+            property.build(this);
         }
     }
     link() {
-        for (let child of this.Children.values()) {
-            (child as any as ILocalNameResolver).link();
+        for (let property of this.Properties) {
+            property.link();
         }
     }
 }
@@ -189,13 +189,13 @@ export class Service implements ILocalNameResolver{
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
-        for (let child of this.Children.values()) {
-            (child as any as ILocalNameResolver).build(this);
+        for (let method of this.Methods) {
+            method.build(this);
         }
     }
     link() {
-        for (let child of this.Children.values()) {
-            (child as any as ILocalNameResolver).link();
+        for (let method of this.Methods) {
+            method.link();
         }
     }
 }
@@ -233,14 +233,16 @@ export class Method implements ILocalNameResolver {
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
-        for (let child of this.Children.values()) {
-            (child as any as ILocalNameResolver).build(this);
+        for (let parameter of this.Parameters) {
+            parameter.build(this);
         }
+        this.ReturnType.build(this);
     }
     link() {
-        for (let child of this.Children.values()) {
-            (child as any as ILocalNameResolver).link();
+        for (let parameter of this.Parameters) {
+            parameter.link();
         }
+        this.ReturnType.link();
     }
 }
 
@@ -277,15 +279,24 @@ export class Type implements ILocalNameResolver{
     Parent: ILocalNameResolver;
     constructor(name?: string, systemType?: string, isGenericDefinition?: boolean) {
         this.Name = name;
+        // The root namespace
+        this.FullName = [name];
         this.SystemType = systemType;
         this.IsGenericDefinition = isGenericDefinition;
     }
     resolve(fullname: string[]): Type {
-        return this.Parent.resolve(fullname);
+        let resolved = this.Parent.resolve(fullname);
+        if (!resolved) {
+            console.log('Not Resolved Type:', this);
+        }
+        return resolved;
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
         if (this.IsGeneric) {
+            if (!this.GenericDefinition) {
+                console.log('GenericDefinition Not Defined:', this);
+            }
             this.GenericDefinition.build(this);
             for (let genericArgument of this.GenericArguments) {
                 genericArgument.build(this);
@@ -301,7 +312,13 @@ export class Type implements ILocalNameResolver{
             }
         } else {
             // In the case of non-generic type, we only need to resolve to the definition
-            this.Reference = this.resolve(this.FullName);
+            try{
+                this.Reference = this.resolve(this.FullName);
+            } catch (ex) {
+                console.log('Unresolved Type:', this);
+                throw `Can't not resolve type ${this.FullName.join('.')}`;
+            }
+            
         }
     }
 }
@@ -317,3 +334,4 @@ export const ListType = new Type('List', 'List', true);
 export const DictType = new Type('Dict', 'Dict', true);
 export const ArrayType = new Type('Array', 'Array', true);
 export const PromiseType = new Type('Promise', 'Promise', true);
+export const VoidType = new Type('void', 'void');

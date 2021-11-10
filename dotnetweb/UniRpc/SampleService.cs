@@ -23,27 +23,21 @@ namespace UniRpc.WebApplication
             __name = "SampleService";
         }
 
-        public virtual bool Test(Person person)
-        {
-            throw new NotImplementedException();
-        }
+        public abstract bool Test(Person person);
+
 
         public override BaseMessage __invoke(BaseMessage message)
         {
             switch (message.Method)
             {
                 case "Test":
-                    {
-                        // Deserialize Parameters
-                        Person person = message.Payload.GetProperty<Person>("person");
-                        return new BaseMessage()
-                        {
-                            Id = message.Id,
-                            Payload = Test(person).AsElement()
-                        };
-                    }
+                {
+                    // Deserialize Parameters
+                    Person person = message.Payload.GetProperty<Person>("person");
+                    return message.ReturnMessage(Test(person));
+                }
+                default: throw new NotImplementedException($"{message.Service}.{message.Method} is not implemented.");
             }
-            return base.__invoke(message);
         }
     }
 

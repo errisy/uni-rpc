@@ -33,16 +33,5 @@ namespace UniRpc.WebApplication
         {
             return JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(value));
         }
-        public static BaseMessage ReturnMessage<T>(this BaseMessage item, T value)
-        {
-            return new BaseMessage
-            {
-                Id = item.Id,
-                Service = item.Service,
-                Method = item.Method,
-                GenericArguments = item.GenericArguments,
-                Payload = value.AsElement()
-            };
-        }
     }
 }

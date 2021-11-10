@@ -7,6 +7,7 @@ import { SyntaxKindMap } from './SyntaxKindMap';
 import { SourceFileResovler } from './resolvers';
 import {} from 'ts-expose-internals';
 import { RPC, Target } from './rpc-configuration';
+import { CSharpBuilder } from './csharp';
 
 function readRPCConfig() {
   let data = fs.readFileSync('uni-rpc.yaml', 'utf-8');
@@ -82,9 +83,16 @@ const getCircularReplacer = () => {
   };
 };
 
+function emitFiles() {
+  for(let target of config.rpc) {
+    if (typeof target.cs == 'string') {
+      let csharp = new CSharpBuilder(resolver);
+      csharp.emit(target);
+    }
+  }
+}
 
-
-function emit(sourceFile: ts.SourceFile) {
+function translate(sourceFile: ts.SourceFile) {
   // console.log('./uni-rpc.yaml', config);
   ClearTargets(config);
   let lowerFilename = sourceFile.fileName.toLowerCase();
@@ -103,7 +111,8 @@ function emit(sourceFile: ts.SourceFile) {
       resolver.link();
       //  util.inspect(results, true, 12)
       
-      WriteFile('./uni-rpc.json', JSON.stringify(results, getCircularReplacer(), 4));
+      // WriteFile('./uni-rpc.json', JSON.stringify(results, getCircularReplacer(), 4));
+      emitFiles();
     }
   }
 
@@ -112,7 +121,7 @@ function emit(sourceFile: ts.SourceFile) {
 
 const transformer: ts.TransformerFactory<ts.SourceFile> = () => {
     return sourceFile => {
-      return ts.factory.updateSourceFile(emit(sourceFile), [
+      return ts.factory.updateSourceFile(translate(sourceFile), [
         ...sourceFile.statements,
       ]);
     };
