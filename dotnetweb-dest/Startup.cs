@@ -1,3 +1,4 @@
+using dotnetweb.Implementations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -55,7 +56,7 @@ namespace dotnetweb
                         WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
                         var service = new WebSocketService(context, webSocket);
                         //bag.Add(service);
-                        service.RegisterService(new SampleServiceImpl());
+                        service.RegisterService(new DevServiceImpl<string>());
                         await service.KeepReceiving();
                         //using ()
                         //{
