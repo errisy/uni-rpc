@@ -24,7 +24,7 @@ export class CodeBuilder {
     build(): string {
         let importNamespaces: string[] = [];
         for (let importNs of this.imports) {
-            importNamespaces.push(importNs);
+            importNamespaces.push(`using ${importNs};`);
         }
         importNamespaces = importNamespaces.sort();
         return `${importNamespaces.join('\r\n')}\r\n${this.lines.join('\r\n')}`;

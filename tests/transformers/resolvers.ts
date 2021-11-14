@@ -25,11 +25,11 @@ export class SourceFileResovler implements ILocalNameResolver {
     resolve(fullname: string[]): Type {
         if (fullname.length == 1 && this.PredefinedTypes.has(fullname[0])) {
             return this.PredefinedTypes.get(fullname[0]);
-        } else if (fullname.length > 1 && this.Children.has(fullname.slice(0,fullname.length - 1).join('.'))) {
+        } else if (fullname.length > 1 && this.Children.has(fullname.slice(0, fullname.length - 1).join('.'))) {
             let resolved: Type | undefined;
             if (resolved = this.Children.get(
-                    fullname.slice(0,fullname.length - 1).join('.')).topdownResolve(fullname.slice(1)
-                )) {
+                    fullname.slice(0, fullname.length - 1).join('.')).topdownResolve(fullname.slice(1))
+                    ) {
                 return resolved;
             }
         }
@@ -39,7 +39,10 @@ export class SourceFileResovler implements ILocalNameResolver {
 
     build(parent: ILocalNameResolver): void {
         for (let child of this.Children.values()) {
-            child.build(this);
+            // Only build the top level namespaces
+            if (child.Fullname.length == 1){
+                child.build(this);
+            }
         }
     }
 
@@ -121,6 +124,9 @@ export class SourceFileResovler implements ILocalNameResolver {
         let nsName = this.buildCurrentNamespaceFullname();
         if (isAbstractClass(token)) {
             let service: Service = this.currentNamespace.addService(nsName, name);
+            if (token.heritageClauses) {
+                service.Base = resolveBaseType(token.heritageClauses);
+            }
             if (token.typeParameters) {
                 service.IsGeneric = true;
                 for (let typeParameter of token.typeParameters) {
@@ -136,6 +142,9 @@ export class SourceFileResovler implements ILocalNameResolver {
             }
         } else {
             let message: Message = this.currentNamespace.addMessage(nsName, name);
+            if (token.heritageClauses) {
+                message.Base = resolveBaseType(token.heritageClauses);
+            }
             if (token.typeParameters) {
                 message.IsGeneric = true;
                 for (let typeParameter of token.typeParameters) {
@@ -151,6 +160,8 @@ export class SourceFileResovler implements ILocalNameResolver {
             }
             let messageType = new Type(name);
             messageType.FullName = [...this.NamespaceStack.map(ns => ns.Name), name];
+            messageType.MessageReference = message;
+            message.Type = messageType;
         }
     }
 }
@@ -168,6 +179,15 @@ function resolveMethod(token: ts.MethodDeclaration): Method {
     method.Parameters = resolveParameters(token.parameters as any);
     method.ReturnType = resolveType(token.type as any); 
     return method;
+}
+
+function resolveBaseType(clauses: ts.NodeArray<ts.HeritageClause>): Type {
+    for (let clause of clauses) {
+        if (clause.token == ts.SyntaxKind.ExtendsKeyword) {
+            return resolveTypeReference(clause.types[0]);
+        }
+    }
+    return undefined;
 }
 
 function resolveParameters(parameterArray: ts.NodeArray<ts.ParameterDeclaration>): Parameter[] {
@@ -217,6 +237,9 @@ function resolveProperty(token: ts.PropertyDeclaration): Property {
 
 function resolveType(token: ts.Node): Type {
     switch (token.kind) {
+        case ts.SyntaxKind.VoidKeyword: {
+            return VoidType;
+        }
         case ts.SyntaxKind.BooleanKeyword: {
             return BooleanType;
         } break;
@@ -290,7 +313,6 @@ function resolveGenericArguments(token: ts.SyntaxList): Type[] {
         case ts.SyntaxKind.CommaToken: 
             break;
         default: {
-            console.log('resolveGenericArguments, default:', SyntaxKindMap[item.kind], item.getFullText());
             types.push(resolveType(item as any));
         } break;
       }

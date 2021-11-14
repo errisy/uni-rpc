@@ -35,19 +35,12 @@ export function ReadFile(filename: string, encoding?: BufferEncoding): Promise<s
         });
     });
 }
-export function WriteFile(filename: string, data: string, encoding?: BufferEncoding): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-        if (typeof encoding == 'undefined' || encoding.length == 0) {
-            encoding = 'utf8';
-        }
-        fs.writeFile(filename, data, encoding, ex => {
-            if (ex) {
-                reject(ex);
-            } else {
-                resolve();
-            }
-        });
-    });
+export function WriteFile(filename: string, data: string, encoding?: BufferEncoding) {
+    if (typeof encoding == 'undefined' || encoding.length == 0) {
+        encoding = 'utf8';
+    }
+    MakeParentDirectories(filename);
+    fs.writeFileSync(filename, data, encoding);
 }
 export function MakeParentDirectories(filepath: string) {
     filepath = path.normalize(filepath);
@@ -88,6 +81,24 @@ export function CopyFile(source: string, destination: string) {
     MakeParentDirectories(destination);
     fs.copyFileSync(source, destination);
 }
+
+export function CopyDirectory(source: string, destination: string) {
+    if (!fs.existsSync(source)) return;
+    if (!fs.statSync(source).isDirectory()) return;
+    if (!IsDirectory(destination)) {
+        MakeDirectories(destination);
+    }
+    for (let item of fs.readdirSync(source)) {
+        let itempath = path.join(source, item);
+        if(IsFile(itempath)) {
+            fs.copyFileSync(itempath, path.join(destination, item));
+        } else if (IsDirectory(itempath)) {
+            // DFS copy of children
+            CopyDirectory(itempath, path.join(destination, item));
+        }
+    }
+}
+
 export async function MoveFile(source: string, destination: string) {
     if (!fs.existsSync(source)) return;
     if (!(await (fs.promises.stat(source))).isFile()) return;

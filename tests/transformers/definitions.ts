@@ -50,9 +50,7 @@ export class Namespace implements ILocalNameResolver{
     topdownResolve(fullname: string[]): Type | undefined {
         if (fullname.length == 1 && this.Children.has(fullname[0]) && this.Children.get(fullname[0]).Reflection == 'Message') {
             return (this.Children.get(fullname[0]) as any as Message).Type;
-        // } else if (fullname.length > 1 && this.Name == fullname[0] && this.Children.has(fullname[1]) && this.Children.has(fullname[1])['Reflection'] == 'Namespace') {
-        //     return (this.Children.get(fullname[1]) as Namespace).topdownResolve(fullname.slice(2));
-        } else if (fullname.length > 1 && this.Children.has(fullname[0]) && this.Children.has(fullname[0])['Reflection'] == 'Namespace') {
+        } else if (fullname.length > 1 && this.Children.has(fullname[0]) && this.Children.get(fullname[0]).Reflection == 'Namespace') {
             return (this.Children.get(fullname[0]) as Namespace).topdownResolve(fullname.slice(1));
         }
         return undefined;
@@ -64,16 +62,8 @@ export class Namespace implements ILocalNameResolver{
                 return (this.Children.get(name) as any as Message).Type;
             }
         } else {
-            let isSubServiceSubMessage = this.Name == 'MyService' && fullname.length == 2 && fullname[0] == 'SubService' && fullname[1] == 'SubMessage'; 
-            if (isSubServiceSubMessage) {
-                console.log('isSubServiceSubMessage:', isSubServiceSubMessage);
-                for (let key of this.Children.keys()) {
-                    console.log(key, '==>', this.Children.get(key)['Fullname']);
-                }
-            }
             for (let index of this.findMatchIndices(fullname)) {
                 // Before matching descendents, we have to match ancestors first.
-                if (isSubServiceSubMessage) console.log('isSubServiceSubMessage index:', index);
                 if (index < 0 || this.tryMatchParent(fullname.slice(0, index))) {
                     let resolved: Type = undefined;
                     if (resolved = this.topdownResolve(fullname.slice(index + 1))) {
@@ -128,6 +118,7 @@ export class Namespace implements ILocalNameResolver{
 }
 
 export class Message implements ILocalNameResolver {
+    Base: Type;
     Reflection: 'Message' = 'Message';
     Name: string;
     Namespace: string[];
@@ -139,10 +130,11 @@ export class Message implements ILocalNameResolver {
     Children: Map<string, Type> = new Map();
     Parent: ILocalNameResolver;
     buildChildren() {
+        this.Children.set(this.Name, this.Type);
         if (this.IsGeneric) {
             // The Message type itself can be a valid type
-            this.Children.set(this.Name, this.Type);
             for (let genericArgument of this.GenericArguments) {
+                genericArgument.IsClassGenericPlaceholder = true;
                 this.Children.set(genericArgument.Name,  genericArgument);
             }
         }
@@ -156,11 +148,18 @@ export class Message implements ILocalNameResolver {
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
+        if (this.Base) {
+            this.Base.build(this);
+        }
+        this.buildChildren();
         for (let property of this.Properties) {
             property.build(this);
         }
     }
     link() {
+        if (this.Base) {
+            this.Base.link();
+        }
         for (let property of this.Properties) {
             property.link();
         }
@@ -185,6 +184,7 @@ export class Property implements ILocalNameResolver {
 }
 
 export class Service implements ILocalNameResolver{
+    Base: Type;
     Reflection: 'Service' = 'Service';
     Name: string;
     Namespace: string[];
@@ -197,6 +197,7 @@ export class Service implements ILocalNameResolver{
     buildChildren() {
         if (this.IsGeneric) {
             for (let genericArgument of this.GenericArguments) {
+                genericArgument.IsClassGenericPlaceholder = true;
                 this.Children.set(genericArgument.Name,  genericArgument);
             }
         }
@@ -209,12 +210,18 @@ export class Service implements ILocalNameResolver{
     }
     build(parent: ILocalNameResolver) {
         this.Parent = parent;
+        if (this.Base) {
+            this.Base.build(this);
+        }
         this.buildChildren();
         for (let method of this.Methods) {
             method.build(this);
         }
     }
     link() {
+        if (this.Base) {
+            this.Base.link();
+        }
         for (let method of this.Methods) {
             method.link();
         }
@@ -242,10 +249,6 @@ export class Method implements ILocalNameResolver {
         if (this.IsGeneric) {
             // Method can only resolve generic Argument Type by name.
             // try print all children
-            console.log('Generic Method:', this.Name);
-            for (let key of this.Children.keys()) {
-                console.log(key, '==>', this.Children.get(key));
-            }
             if (fullname.length == 1 && this.Children.has(fullname[0])) {
                 // it is generic parameter type
                 return this.Children.get(fullname[0]);
@@ -302,6 +305,7 @@ export class Type implements ILocalNameResolver{
     IsGeneric: boolean = false;
     IsGenericDefinition: boolean = false;
     IsGenericPlaceholder: boolean = false;
+    IsClassGenericPlaceholder: boolean = false;
     Reference: Type;
     Parent: ILocalNameResolver;
     constructor(name?: string, systemType?: string, isGenericDefinition?: boolean) {

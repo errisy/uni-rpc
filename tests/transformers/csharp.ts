@@ -2,7 +2,7 @@ import { Namespace, Service, Message, Method, Property, Parameter, Type, VoidTyp
 import { SourceFileResovler } from './resolvers';
 import { RPC, Target } from './rpc-configuration';
 import { CodeBuilder } from './code-builder';
-import { CopyFile, MakeDirectories, Remove, ResolvePath } from './os-utilities';
+import { CopyDirectory, CopyFile, MakeDirectories, Remove, ResolvePath, WriteFile } from './os-utilities';
 import * as path from 'path';
 
 export class CSharpBuilder {
@@ -12,28 +12,36 @@ export class CSharpBuilder {
         if (typeof target.cs == 'string') {
             let rootDirectory = ResolvePath(target.cs);
             switch (target.type) {
-                case 'service': {
-                    this.copyServiceFiles(rootDirectory);
+                case 'websocket-service': {
+                    this.copyWebSocketServiceFiles(rootDirectory);
                     for (let childNamespace of this.resolver.Children.values()) {
-                        childNamespace.emitCSharpServiceFiles(rootDirectory);
+                        if (childNamespace.Fullname.length == 1) {
+                            let topLevelNamespacePath = path.join(rootDirectory, childNamespace.Name);
+                            Remove(topLevelNamespacePath);
+                            childNamespace.emitCSharpServiceFiles(rootDirectory);
+                        }
                     }
                 } break;
-                case 'client': {
+                case 'websocket-client': {
                     
+                } break;
+                case 'lambda-websocket-service': {
+
+                } break;
+                case 'lambda-http-service': {
+
                 } break;
             }
         }
     }
-    private copyServiceFiles(rootDirectory: string) {
+    private copyWebSocketServiceFiles(rootDirectory: string) {
         // Remove Dir UniRpc
         let destination = path.normalize(path.join(rootDirectory, 'UniRpc'));
+        console.log('Remove:', destination);
         Remove(destination);
         //
         MakeDirectories(destination);
-        CopyFile('./transformers/csharp/BaseMessage.cs',  destination);
-        CopyFile('./transformers/csharp/WebApplicationExtensions.cs',  destination);
-        CopyFile('./transformers/csharp/WebSocketService.cs',  destination);
-        CopyFile('./transformers/csharp/WebSocketServiceBase.cs',  destination);
+        CopyDirectory('./transformers/csharp/websocket-service', destination);
     }
 }
 
@@ -45,16 +53,19 @@ declare module './definitions' {
     export interface Service {
         emitCSharpServiceFile(rootDirectory: string): void;
         emitCSharpClientFile(rootDirectory: string): void;
-        emitCSharpService(builder: CodeBuilder, indent: number);
-        emitCSharpServiceConstructor(builder: CodeBuilder, indent: number);
-        emitCSharpServiceMethod(builder: CodeBuilder, indent: number, method: Method);
-        emitCSharpType(typeInstance: Type, builder: CodeBuilder);
-        emitCSharpParameters(parameters: Parameter[], builder: CodeBuilder);
-        emitCSharpServiceInvokeMethod(builder: CodeBuilder, indent: number);
-        emitCSharpClientFile(rootDirectory: string)
+        emitCSharpService(builder: CodeBuilder, indent: number): void;
+        emitCSharpServiceConstructor(builder: CodeBuilder, indent: number): void;
+        emitCSharpServiceMethod(builder: CodeBuilder, indent: number, method: Method): void;
+        emitCSharpType(typeInstance: Type, builder: CodeBuilder): void;
+        emitCSharpParameters(parameters: Parameter[], builder: CodeBuilder): void;
+        emitCSharpServiceInvokeMethod(builder: CodeBuilder, indent: number): void;
+        emitCSharpClientFile(rootDirectory: string): void;
     }
     export interface Message {
         emitFile(rootDirectory: string): void;
+        emitCSharpMessage(builder: CodeBuilder, indent: number): void;
+        emitCSharpProperty(builder: CodeBuilder, indent: number, property: Property): void;
+        emitCSharpType(typeInstance: Type, builder: CodeBuilder): void;
     }
 }
 
@@ -71,15 +82,18 @@ module CodeGeneration {
     TypeMappings.set('Dict', 'System.Collections.Generic.Dictionary');
     TypeMappings.set('void', 'void');
 
-    export function mapCSType(typeInstance: Type, builder: CodeBuilder): string {
-        if (typeInstance.IsGeneric) {
+    export function mapCSharpType(typeInstance: Type, builder: CodeBuilder): string {
+        if (typeInstance.IsGenericPlaceholder) {
+            return typeInstance.Name;
+        }
+        else if (typeInstance.IsGeneric) {
             if (typeInstance.GenericDefinition.Reference.SystemType &&
                 typeInstance.GenericDefinition.Reference.SystemType == 'Array') {
                 // This is the special case for array.
                 let arrayType = typeInstance.GenericArguments[0];
-                return `${mapCSType(arrayType, builder)}[]`;
+                return `${mapCSharpType(arrayType, builder)}[]`;
             } else {
-                return `${mapCSType(typeInstance.GenericDefinition, builder)}<${typeInstance.GenericArguments.map(arg => mapCSType(arg, builder)).join(', ')}>`;
+                return `${mapCSharpType(typeInstance.GenericDefinition, builder)}<${typeInstance.GenericArguments.map(arg => mapCSharpType(arg, builder)).join(', ')}>`;
             }
         } else {
             if (!typeInstance.Reference) {
@@ -93,9 +107,13 @@ module CodeGeneration {
                     }
                     return name;
                 }
+            } else if (typeInstance.Reference.IsGenericPlaceholder) {
+                return typeInstance.Reference.Name;
             } else if (typeInstance.Reference.MessageReference) {
                 return typeInstance.Reference.MessageReference.Fullname.join('.');
             }
+            console.log('Type Not Found:', typeInstance);
+            console.trace(`No System Type Mapping Found in CSharp for "${typeInstance.Reference.SystemType}"`);
             throw `No System Type Mapping Found in CSharp for "${typeInstance.Reference.SystemType}"`;
         }
     }
@@ -104,8 +122,22 @@ module CodeGeneration {
 
 class NamespaceEmitter extends Namespace {
     emitCSharpServiceFiles(rootDirectory: string) {
-        for (let service of this.Services) {
-            service.emitCSharpServiceFile(rootDirectory);
+        for (let key of this.Children.keys()) {
+            let child = this.Children.get(key);
+            switch (child.Reflection) {
+                case 'Namespace': {
+                    let namespaceInstance = child as Namespace;
+                    namespaceInstance.emitCSharpServiceFiles(rootDirectory);
+                }  break;
+                case 'Service': {
+                    let serviceInstance = child as Service;
+                    serviceInstance.emitCSharpServiceFile(rootDirectory);
+                } break;
+                case 'Message': {
+                    let messageInstance = child as Message;
+                    messageInstance.emitFile(rootDirectory);
+                } break;
+            }
         }
     }
     emitCSharpClientFiles(rootDirectory: string) {
@@ -117,17 +149,28 @@ class NamespaceEmitter extends Namespace {
 
 class ServiceEmitter extends Service {
     emitCSharpServiceFile(rootDirectory: string) {
-        let filename = `${rootDirectory}/${this.Fullname.join('/')}.cs`;
+        let filename = path.join(rootDirectory, ...this.Namespace, this.Name + '.cs');
         let builder: CodeBuilder = new CodeBuilder();
         let indent = 0;
         builder.appendLine(`namespace ${this.Namespace.join('.')}`, indent);
         builder.appendLine('{', indent);
         this.emitCSharpService(builder, indent + 1);
         builder.appendLine('}', indent);
-
+        console.log('Write Code to:', filename);
+        WriteFile(filename, builder.build(), 'utf-8');
     }
     emitCSharpService(builder: CodeBuilder, indent: number) {
-        builder.appendLine(`public abstract class ${this.Name}: WebSocketServiceBase`, indent);
+        builder.addImport('System');
+        builder.addImport('System.Collections.Generic');
+        builder.addImport('UniRpc.WebApplication');
+        if (this.IsGeneric) {
+            let genericArugments = this.GenericArguments
+                .map(arg => this.emitCSharpType(arg, builder))
+                .join(', ');
+            builder.appendLine(`public abstract class ${this.Name}<${genericArugments}>: WebSocketServiceBase`, indent);
+        } else {
+            builder.appendLine(`public abstract class ${this.Name}: WebSocketServiceBase`, indent);
+        }
         builder.appendLine(`{`, indent);
         this.emitCSharpServiceConstructor(builder, indent + 1);
         for (let method of this.Methods) {
@@ -137,16 +180,32 @@ class ServiceEmitter extends Service {
         builder.appendLine(`}`, indent);
     }
     emitCSharpServiceConstructor(builder: CodeBuilder, indent: number) {
+        let fullname = this.Fullname.join('.');
         builder.appendLine(`public ${this.Name}()`, indent);
         builder.appendLine(`{`, indent);
-        builder.appendLine(`__name = "${this.Name}";`, indent + 1);
+        builder.appendLine(`__reflection = "${fullname}";`, indent + 1);
+        if (this.IsGeneric) {
+            let genericTypeNames = this.GenericArguments
+                .map(arg => `typeof(${arg.Name}).FullName`)
+                .join(', ');
+            builder.appendLine(`__genericArguments = new List<string>() { ${genericTypeNames} }.AsReadOnly();`, indent + 1);
+        } else {
+            builder.appendLine(`__genericArguments = new List<string>().AsReadOnly();`, indent + 1);
+        }
         builder.appendLine(`}`, indent);
     }
     emitCSharpServiceMethod(builder: CodeBuilder, indent: number, method: Method) {
-        builder.appendLine(`public abstract ${this.emitCSharpType(method.ReturnType, builder)} ${method.Name}(${this.emitCSharpParameters(method.Parameters, builder)});`, indent);
+        if (method.IsGeneric) {
+            let genericArugments = method.GenericArguments
+                .map(arg => this.emitCSharpType(arg, builder))
+                .join(', ');
+                builder.appendLine(`public abstract ${this.emitCSharpType(method.ReturnType, builder)} ${method.Name}<${genericArugments}>(${this.emitCSharpParameters(method.Parameters, builder)});`, indent);
+        } else {
+            builder.appendLine(`public abstract ${this.emitCSharpType(method.ReturnType, builder)} ${method.Name}(${this.emitCSharpParameters(method.Parameters, builder)});`, indent);
+        }
     }
     emitCSharpType(typeInstance: Type, builder: CodeBuilder) {
-        return CodeGeneration.mapCSType(typeInstance, builder);
+        return CodeGeneration.mapCSharpType(typeInstance, builder);
     }
     emitCSharpParameters(parameters: Parameter[], builder: CodeBuilder) {
         return parameters
@@ -154,38 +213,81 @@ class ServiceEmitter extends Service {
             .join(', ');
     }
     emitCSharpServiceInvokeMethod(builder: CodeBuilder, indent: number) {
-        builder.appendLine(`public override BaseMessage __invoke(BaseMessage message)`);
+        builder.appendLine(`public override BaseMessage __invoke(BaseMessage message)`, indent);
         builder.appendLine(`{`, indent);
         let switchIndent = indent + 1;
         let caseIndent = switchIndent + 1;
-        let contentIndent = caseIndent + 1;
+        let blockIndent = caseIndent + 1;
+        let contentIndent = blockIndent + 1;
         builder.appendLine(`switch (message.Method)`, switchIndent);
         builder.appendLine(`{`, switchIndent);
         for (let method of this.Methods) {
             builder.appendLine(`case "${method.Name}":`, caseIndent);
-            builder.appendLine(`{`, caseIndent);
+            builder.appendLine(`{`, blockIndent);
             for (let parameter of method.Parameters) {
-                let parameterType = this.emitCSharpType(parameter.Type, builder);
-                builder.appendLine(`${parameterType} ____${parameter.Name} = message.Payload.GetProperty<${parameterType}>("${parameter.Name}");`, contentIndent)
+                if (parameter.Type.Reference.IsGenericPlaceholder && !parameter.Type.Reference.IsClassGenericPlaceholder) {
+                    builder.appendLine(`object ____${parameter.Name} = message.Payload.GetPropertyByReflection("${parameter.Name}");`, contentIndent)
+                } else {
+                    let parameterType = this.emitCSharpType(parameter.Type, builder);
+                    builder.appendLine(`${parameterType} ____${parameter.Name} = message.Payload.GetProperty<${parameterType}>("${parameter.Name}");`, contentIndent)
+                }
             }
-            if (method.ReturnType.Reference === VoidType) {
-                builder.appendLine(`break;`, contentIndent);
-            } else {
-                let parameterNames = method.Parameters
+            let parameterNames = method.Parameters
                     .map(parameter => `____${parameter.Name}`)
                     .join(', ');
+            if (method.ReturnType.Reference === VoidType) {
+                builder.appendLine(`${method.Name}(${parameterNames});`, contentIndent);
+                builder.appendLine(`break;`, contentIndent);
+            } else {
                 builder.appendLine(`return message.ReturnMessage(${method.Name}(${parameterNames}));`, contentIndent);
             }
-            builder.appendLine(`}`, caseIndent);
+            builder.appendLine(`}`, blockIndent);
         }
-        builder.appendLine(`default: throw new NotImplementedException($"{message.Service}.{message.Method} is not implemented.");`, caseIndent);
         builder.appendLine(`}`, switchIndent);
+        builder.appendLine(`throw new NotImplementedException($"{message.Service}.{message.Method} is not implemented.");`, switchIndent);
         builder.appendLine(`}`, indent);
     }
 
     emitCSharpClientFile(rootDirectory: string) {
         // emit the UniRpcFiles
         
+    }
+}
+
+class MessageEmitter extends Message {
+    emitFile(rootDirectory: string) {
+        let filename = path.join(rootDirectory, ...this.Namespace, this.Name + '.cs');
+        let builder: CodeBuilder = new CodeBuilder();
+        let indent = 0;
+        builder.appendLine(`namespace ${this.Namespace.join('.')}`, indent);
+        builder.appendLine('{', indent);
+        this.emitCSharpMessage(builder, indent + 1);
+        builder.appendLine('}', indent);
+        console.log('Write Code to:', filename);
+        WriteFile(filename, builder.build(), 'utf-8');
+    }
+    emitCSharpMessage(builder: CodeBuilder, indent: number) {
+        if (this.IsGeneric) {
+            let genericArugments = this.GenericArguments
+                .map(arg => this.emitCSharpType(arg, builder))
+                .join(', ');
+            builder.appendLine(`public abstract class ${this.Name} <${genericArugments}>`, indent);
+        } else {
+            builder.appendLine(`public abstract class ${this.Name}`, indent);
+        }
+        builder.appendLine(`{`, indent);
+        let fullname = this.Fullname.join('.');
+        builder.appendLine(`public string __reflection { get; set; } = "${fullname}";`, indent + 1);
+        for (let property of this.Properties) {
+            this.emitCSharpProperty(builder, indent + 1, property);
+        }
+        builder.appendLine(`}`, indent);
+    }
+    emitCSharpProperty(builder: CodeBuilder, indent: number, property: Property) {
+        builder.appendLine(`public ${this.emitCSharpType(property.Type, builder)} ${property.Name} { get; set; }`, indent);
+    }
+    emitCSharpType(typeInstance: Type, builder: CodeBuilder) {
+        return CodeGeneration.mapCSharpType(typeInstance, builder);
     }
 }
 
@@ -197,6 +299,11 @@ Service.prototype.emitCSharpType = ServiceEmitter.prototype.emitCSharpType;
 Service.prototype.emitCSharpParameters = ServiceEmitter.prototype.emitCSharpParameters;
 Service.prototype.emitCSharpServiceInvokeMethod = ServiceEmitter.prototype.emitCSharpServiceInvokeMethod;
 Service.prototype.emitCSharpService = ServiceEmitter.prototype.emitCSharpService;
+
+Message.prototype.emitFile = MessageEmitter.prototype.emitFile;
+Message.prototype.emitCSharpMessage = MessageEmitter.prototype.emitCSharpMessage;
+Message.prototype.emitCSharpProperty = MessageEmitter.prototype.emitCSharpProperty;
+Message.prototype.emitCSharpType = MessageEmitter.prototype.emitCSharpType;
 
 Namespace.prototype.emitCSharpServiceFiles = NamespaceEmitter.prototype.emitCSharpServiceFiles;
 Namespace.prototype.emitCSharpClientFiles = NamespaceEmitter.prototype.emitCSharpClientFiles;

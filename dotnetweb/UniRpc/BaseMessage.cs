@@ -13,4 +13,9 @@ namespace UniRpc.WebApplication
         public string[] GenericArguments { get; set; }
         public JsonElement Payload { get; set; }
     }
+
+    public enum OK
+    {
+        Value
+    }
 }

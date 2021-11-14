@@ -29,6 +29,7 @@ namespace MyService {
         abstract Gap(value: integer, enabled: boolean): List<long>;
         abstract Release<Cat> (cat: Cat, dog: Dog): bytes;
         abstract GetMessage(): Message;
+        abstract IncomingCall(): void;
     }
 
     export class Message {
@@ -37,11 +38,23 @@ namespace MyService {
         tested: boolean;
         sub: SubService.SubMessage<Message>;
     }
+
+    export class AdvancedMessage extends Message {
+        story: string;
+    }
+
+    export class AdvancedMessage2 extends SubService.SubMessage<string> {
+        story: string;
+    }
 }
 
 namespace MyService {
     
-    
+    export enum StageEnum {
+        Value = 'Value',
+        Hello = 'Hello',
+        Jade = 'Jade'
+    }
 }
 
 

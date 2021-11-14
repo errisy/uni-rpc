@@ -33,6 +33,11 @@ namespace UniRpc.WebApplication
         {
             return JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(value));
         }
+        public static object GetPropertyByReflection(this JsonElement element, string name)
+        {
+            var typeName = element.GetProperty(name).GetProperty("__reflection").GetString();
+            return JsonSerializer.Deserialize(element.GetProperty(name).GetRawText(), Type.GetType(typeName));
+        }
         public static BaseMessage ReturnMessage<T>(this BaseMessage item, T value)
         {
             return new BaseMessage

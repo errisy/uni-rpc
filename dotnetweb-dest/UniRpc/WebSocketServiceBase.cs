@@ -1,14 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Reactive.Subjects;
 
 namespace UniRpc.WebApplication
 {
     public abstract class WebSocketServiceBase
     {
-        public string __name { get; set; }
+        public string __reflection { get; protected set; }
         public bool __isGeneric { get; set; }
-        public List<string> __genericArguments { get; set; }
+        public ReadOnlyCollection<string> __genericArguments { get; protected set; }
         public Subject<BaseMessage> __outgoing { get; set; }
         public string __user { get; set; }
         public string __group { get; set; }

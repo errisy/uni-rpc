@@ -29,9 +29,27 @@ namespace UniRpc.WebApplication
             return JsonSerializer.Deserialize<T>(element.GetProperty(name).GetRawText());
         }
 
+        public static object GetPropertyByReflection(this JsonElement element, string name)
+        {
+            var typeName = element.GetProperty(name).GetProperty("__reflection").GetString();
+            return JsonSerializer.Deserialize(element.GetProperty(name).GetRawText(), Type.GetType(typeName));
+        }
+        
         public static JsonElement AsElement<T>(this T value)
         {
             return JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(value));
+        }
+
+        public static BaseMessage ReturnMessage<T>(this BaseMessage item, T value)
+        {
+            return new BaseMessage
+            {
+                Id = item.Id,
+                Service = item.Service,
+                Method = item.Method,
+                GenericArguments = item.GenericArguments,
+                Payload = value.AsElement()
+            };
         }
     }
 }

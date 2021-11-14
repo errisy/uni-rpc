@@ -6,7 +6,7 @@ export interface Target {
     ja: string | string[];
     /** List of selected namespaces */
     ns: string[];
-    type: 'service' | 'client';
+    type: 'websocket-service' | 'websocket-client' | 'lambda-http-service' | 'lambda-websocket-service';
     csCode?: string;
     tsCode?: string;
     pyCode?: string;
