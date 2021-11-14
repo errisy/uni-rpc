@@ -24,6 +24,11 @@ namespace UniRpc.WebApplication
             return list.ToArray();
         }
 
+        public static byte[] Serialize(this BaseMessage message)
+        {
+            return JsonSerializer.SerializeToUtf8Bytes(message);
+        }
+        
         public static T GetProperty<T>(this JsonElement element, string name)
         {
             return JsonSerializer.Deserialize<T>(element.GetProperty(name).GetRawText());

@@ -157,9 +157,9 @@ export class Message implements ILocalNameResolver {
         }
     }
     link() {
-        if (this.Base) {
-            this.Base.link();
-        }
+        // if (this.Base) {
+        //     this.Base.link();
+        // }
         for (let property of this.Properties) {
             property.link();
         }
@@ -219,9 +219,9 @@ export class Service implements ILocalNameResolver{
         }
     }
     link() {
-        if (this.Base) {
-            this.Base.link();
-        }
+        // if (this.Base) {
+        //     this.Base.link();
+        // }
         for (let method of this.Methods) {
             method.link();
         }

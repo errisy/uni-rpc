@@ -25,7 +25,7 @@ namespace UniRpc.WebApplication
 
         public WebSocketService RegisterService<T>(T service) where T : WebSocketServiceBase
         {
-            Services.Add(service.__name, service);
+            Services.Add(service.__reflection, service);
             return this;
         }
 
@@ -60,7 +60,8 @@ namespace UniRpc.WebApplication
                     if (Services.ContainsKey(message.Service))
                     {
                         var type = Services[message.Service];
-                        Services[message.Service].__invoke(message);
+                        var returnMessage = Services[message.Service].__invoke(message);
+                        sending.OnNext(returnMessage.Serialize());
                     }
                 });
         }
