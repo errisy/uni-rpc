@@ -1,5 +1,5 @@
 rpc:
-- cs: '../dotnetweb-dest'
-  type: websocket-service
+# - cs: '../dotnetweb-dest'
+#   type: websocket-service
 - ts: '../ts-emit-dest/src/app/'
   type: websocket-angular-client

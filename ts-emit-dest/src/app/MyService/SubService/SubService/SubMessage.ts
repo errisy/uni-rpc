@@ -1,6 +1,6 @@
-import {Message as $Message} from "../../Message";
+import {Message as $MyService_Message} from "../../../Message";
 export class SubMessage <T>
 {
     public virtual string __reflection { get; set; } = "MyService.SubService.SubService.SubMessage";
-    public MyService.Message message { get; set; }
+    public message: $MyService_Message;
 }

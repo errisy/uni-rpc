@@ -489,6 +489,7 @@ export class Type implements ILocalNameResolver{
             // In the case of non-generic type, we only need to resolve to the definition
             try{
                 this.Reference = this.resolve(this.FullName);
+                if (this.Reference.IsGenericPlaceholder) this.IsGenericPlaceholder = true;
             } catch (ex) {
                 console.log('Unresolved Type:', this);
                 throw `Can't not resolve type ${this.FullName.join('.')}`;

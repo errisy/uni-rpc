@@ -1,7 +1,7 @@
-import {IUICloseService as $IUICloseService} from "./IUICloseService";
+import {IUICloseService as $MyService_IUICloseService} from "../IUICloseService";
 namespace MyService
 {
-    export interface IUXService : MyService.IUICloseService
+    export interface IUXService extends $MyService_IUICloseService
     {
         public void resolve();
     }

@@ -1,6 +1,6 @@
-import {SubMessage as $SubMessage} from "../../../SubMessage";
+import {SubMessage as $MyService_SubService_SubService_SubMessage} from "../../../../SubMessage";
 export class TestMessage
 {
     public virtual string __reflection { get; set; } = "MyService.SubService.SubService.SubService.TestMessage";
-    public MyService.SubService.SubService.SubMessage<string> prop { get; set; }
+    public prop: $MyService_SubService_SubService_SubMessage<string>;
 }

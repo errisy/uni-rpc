@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Subscribable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { filter, first } from 'rxjs/operators';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { environment } from '../../environments/environment';
@@ -11,7 +11,7 @@ import { TokenHolder } from './token-holder.service';
 @Injectable({
   providedIn: 'root'
 })
-export class WebsocketClient {
+export class WebsocketService {
   subject: WebSocketSubject<BaseMessage>;
   tracking: {[serial: string]: any} = {};
   constructor(public token: TokenHolder) {
@@ -44,7 +44,7 @@ export class WebsocketClient {
     }
     return sections.join('');
   }
-  send(message: BaseMessage): Subscribable<BaseMessage> {
+  send(message: BaseMessage): Observable<BaseMessage> {
     let Id = this.generateId(16);
     message.Id = Id;
     this.tracking[Id] = message;

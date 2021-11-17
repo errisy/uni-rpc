@@ -1,6 +1,6 @@
-import {SubMessage as $SubService_SubService_SubMessage} from "./SubService/SubService/SubMessage";
-export class AdvancedMessage2 : MyService.SubService.SubService.SubMessage<string>
+import {SubMessage as $MyService_SubService_SubService_SubMessage} from "../SubService/SubService/SubMessage";
+export class AdvancedMessage2 extends $MyService_SubService_SubService_SubMessage<string>
 {
     public override string __reflection { get; set; } = "MyService.AdvancedMessage2";
-    public string story { get; set; }
+    public story: string;
 }

@@ -1,10 +1,10 @@
-import {Message as $Message} from "./Message";
-import {SubMessage as $SubService_SubMessage} from "./SubService/SubMessage";
+import {Message as $MyService_Message} from "../Message";
+import {SubMessage as $MyService_SubService_SubMessage} from "../SubService/SubMessage";
 export class Message
 {
     public virtual string __reflection { get; set; } = "MyService.Message";
-    public string name { get; set; }
-    public number value { get; set; }
-    public boolean tested { get; set; }
-    public MyService.SubService.SubMessage<MyService.Message> sub { get; set; }
+    public name: string;
+    public value: number;
+    public tested: boolean;
+    public sub: $MyService_SubService_SubMessage<$MyService_Message>;
 }

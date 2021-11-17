@@ -1,5 +1,5 @@
 export interface BaseMessage {
-    Id: string;
+    Id?: string;
     Service: string;
     Method: string;
     GenericArguments: string[];

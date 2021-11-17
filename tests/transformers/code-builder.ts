@@ -10,7 +10,7 @@ export class CodeBuilder {
     addImport(value: string) {
         this.imports.add(value);
     }
-    addHierarchicalImports(source: string, name: string, alias?: string) {
+    addHierarchicalImport(source: string, name: string, alias?: string) {
         if (!this.hierarchicalImports.has(source)) {
             this.hierarchicalImports.set(source, new Map());
         }
@@ -22,6 +22,12 @@ export class CodeBuilder {
             prefix += '    ';
         }
         this.lines.push(prefix + value);
+    }
+    appendMultipleLines(value: string, indent: number = 0) {
+        let lines = value.split('\n');
+        for (let line of lines) {
+            this.appendLine(line, indent);
+        }
     }
     append(value: string) {
         if (this.lines.length == 0) {
