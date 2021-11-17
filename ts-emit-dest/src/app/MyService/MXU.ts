@@ -1,5 +1,5 @@
-import {IMXService as $IMXService} from "..//IMXService";
-import {IUXService as $IUXService} from "..//IUXService";
+import {IMXService as $IMXService} from "./IMXService";
+import {IUXService as $IUXService} from "./IUXService";
 import {Injectable} from "@angular/core";
 @Injectable({
     providedIn: 'root'

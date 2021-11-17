@@ -1,5 +1,5 @@
-import {Message as $Message} from "..//Message";
-import {SubMessage as $SubService_SubMessage} from "..//SubService/SubMessage";
+import {Message as $Message} from "./Message";
+import {SubMessage as $SubService_SubMessage} from "./SubService/SubMessage";
 export class Message
 {
     public virtual string __reflection { get; set; } = "MyService.Message";

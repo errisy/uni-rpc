@@ -26,7 +26,7 @@ export class Transpiler {
         console.log('Remove:', destination);
         Remove(destination);
         MakeDirectories(destination);
-        CopyDirectory('./transformers/typescript/websocket-client', destination);
+        CopyDirectory('./transformers/typescript/websocket-angular-client', destination);
     }
 }
 
@@ -44,18 +44,17 @@ module CodeGeneration {
 
     function importPath(consumer: string[], source: string[]): string | undefined {
         let origin = [...consumer], from = [...source];
-        let minLength = Math.min(origin.length, from.length);
         while (origin.length > 0 && from.length > 0 && origin[0] == from[0]) {
             origin.shift();
             from.shift();
         }
         if (origin.length == 0 && source.length == 0) return undefined;
         let referencePath = '';
-        for (let i = 1; i < origin.length; i++) {
+        for (let i = 2; i < origin.length; ++i) {
             referencePath += '../';
         }
         if (referencePath == '') referencePath = './';
-        return `${referencePath}/${from.join('/')}`;
+        return `${referencePath}${from.join('/')}`;
     }
 
     function fullnameAlias(fullname: string[]): string {

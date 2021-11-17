@@ -1,6 +1,6 @@
-import {Cat as $Cat} from "..//Cat";
-import {Dog as $Dog} from "..//Dog";
-import {Message as $Message} from "..//Message";
+import {Cat as $Cat} from "./Cat";
+import {Dog as $Dog} from "./Dog";
+import {Message as $Message} from "./Message";
 import {Injectable} from "@angular/core";
 @Injectable({
     providedIn: 'root'

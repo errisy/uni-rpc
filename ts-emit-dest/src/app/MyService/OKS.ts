@@ -1,4 +1,4 @@
-import {OKS as $MyService_OKS} from ".//";
+import {OKS as $MyService_OKS} from "./";
 export class OKS
 {
     public virtual string __reflection { get; set; } = "MyService.OKS";
