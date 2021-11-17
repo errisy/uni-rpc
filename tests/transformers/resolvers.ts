@@ -1,5 +1,5 @@
 import {ILocalNameResolver, Namespace, Service, Message, Method, Parameter as Parameter, Property, Type,
-    BooleanType, StringType, FloatType, DoubleType, IntegerType, LongType, BytesType, ListType, DictType, ArrayType, VoidType} from './definitions';
+    BooleanType, StringType, FloatType, DoubleType, IntegerType, LongType, BytesType, ListType, DictType, ArrayType, VoidType, ServiceInterface, MessageInterface, PromiseType} from './definitions';
 import * as ts from 'typescript';
 import { SyntaxKindMap } from './SyntaxKindMap';
 
@@ -8,6 +8,7 @@ export class SourceFileResovler implements ILocalNameResolver {
     Children: Map<string, Namespace> = new Map();
     Parent: ILocalNameResolver; // This will not be set, because this is the root node of the tree.
     PredefinedTypes: Map<string, Type> = new Map();
+    private currentSourceFilename: string;
     constructor() {
         this.PredefinedTypes.set('boolean', BooleanType);
         this.PredefinedTypes.set('string', StringType);
@@ -20,6 +21,7 @@ export class SourceFileResovler implements ILocalNameResolver {
         this.PredefinedTypes.set('Dict', DictType);
         this.PredefinedTypes.set('Array', ArrayType);
         this.PredefinedTypes.set('void', VoidType);
+        this.PredefinedTypes.set('Promise', PromiseType);
     }
 
     resolve(fullname: string[]): Type {
@@ -53,6 +55,7 @@ export class SourceFileResovler implements ILocalNameResolver {
     }
 
     resolveSourceFile(sourceFile: ts.SourceFile) {
+        this.currentSourceFilename = sourceFile.fileName;
         for (let child of sourceFile.statements) {
             switch (child.kind) {
                 case ts.SyntaxKind.ModuleDeclaration: {
@@ -60,6 +63,7 @@ export class SourceFileResovler implements ILocalNameResolver {
                 } break;
             }
         }
+        this.currentSourceFilename = undefined;
     }
 
     private buildCurrentNamespaceFullname(name?: string): string[] {
@@ -110,6 +114,9 @@ export class SourceFileResovler implements ILocalNameResolver {
                             case ts.SyntaxKind.ClassDeclaration: {
                                 this.resolveClass(child as any);
                             } break;
+                            case ts.SyntaxKind.InterfaceDeclaration: {
+                                this.resolveInterface(child as any);
+                            } break;
                         }
                     }
                     break;
@@ -126,6 +133,7 @@ export class SourceFileResovler implements ILocalNameResolver {
             let service: Service = this.currentNamespace.addService(nsName, name);
             if (token.heritageClauses) {
                 service.Base = resolveBaseType(token.heritageClauses);
+                service.Implementations = resolveInterfaces(token.heritageClauses);
             }
             if (token.typeParameters) {
                 service.IsGeneric = true;
@@ -140,10 +148,16 @@ export class SourceFileResovler implements ILocalNameResolver {
                     } break;
                 }
             }
+            let serviceType = new Type(name);
+            serviceType.FullName = [...this.NamespaceStack.map(ns => ns.Name), name];
+            serviceType.ServiceReference = service;
+            serviceType.ReferenceType = 'Service';
+            service.Type = serviceType;
         } else {
             let message: Message = this.currentNamespace.addMessage(nsName, name);
             if (token.heritageClauses) {
                 message.Base = resolveBaseType(token.heritageClauses);
+                message.Implementations = resolveInterfaces(token.heritageClauses);
             }
             if (token.typeParameters) {
                 message.IsGeneric = true;
@@ -161,7 +175,69 @@ export class SourceFileResovler implements ILocalNameResolver {
             let messageType = new Type(name);
             messageType.FullName = [...this.NamespaceStack.map(ns => ns.Name), name];
             messageType.MessageReference = message;
+            messageType.ReferenceType = 'Message';
             message.Type = messageType;
+        }
+    }
+
+    private resolveInterface(token: ts.InterfaceDeclaration) {
+        let name = resolveName(token.name as any);
+        let nsName = this.buildCurrentNamespaceFullname();
+        if (!name.startsWith('I')) {
+            throw `Interface name of "${token.name}" in File "${this.currentSourceFilename}" does not start with "I".`;
+        }
+        if (name.endsWith('Service')) {
+            let serviceInterface = this.currentNamespace.addServiceInterface(nsName, name);
+            if (token.heritageClauses) {
+                serviceInterface.Base = resolveBaseType(token.heritageClauses);
+            }
+            if (token.typeParameters) {
+                serviceInterface.IsGeneric = true;
+                for (let typeParameter of token.typeParameters) {
+                    serviceInterface.GenericArguments.push(resolveTypeParameter(typeParameter));
+                }
+            }
+            for (let item of token.members) {
+                switch (item.kind) {
+                    case ts.SyntaxKind.MethodSignature: {
+                        serviceInterface.Methods.push(resolveMethod(item as any));
+                    } break;
+                    default: {
+                        console.log(`Interface Method ${item.name}:`, SyntaxKindMap[item.kind]);
+                    } break; 
+                }
+            }
+            let serviceType = new Type(name);
+            serviceType.FullName =  [...this.NamespaceStack.map(ns => ns.Name), name];
+            serviceType.ServiceInterfaceReference = serviceInterface;
+            serviceType.ReferenceType = 'ServiceInterface';
+            serviceInterface.Type = serviceType;
+        } else if (name.endsWith('Message')) {
+            let messageInterface = this.currentNamespace.addMessageInterface(nsName, name);
+            if (token.heritageClauses) {
+                messageInterface.Base = resolveBaseType(token.heritageClauses);
+            }
+            if (token.typeParameters) {
+                messageInterface.IsGeneric = true;
+                for (let typeParameter of token.typeParameters) {
+                    messageInterface.GenericArguments.push(resolveTypeParameter(typeParameter));
+                }
+            }
+            for (let item of token.members) {
+                switch (item.kind) {
+                    case ts.SyntaxKind.PropertySignature: {
+                        messageInterface.Properties.push(resolveProperty(item as any));
+                    } break;
+                    default: {
+                        console.log(`Interface Method ${item.name}:`, SyntaxKindMap[item.kind]);
+                    } break; 
+                }
+            }
+            let messageType = new Type(name);
+            messageType.FullName = [...this.NamespaceStack.map(ns => ns.Name), name];
+            messageType.MessageInterfaceReference = messageInterface;
+            messageType.ReferenceType = 'MessageInterface';
+            messageInterface.Type = messageType;
         }
     }
 }
@@ -184,10 +260,24 @@ function resolveMethod(token: ts.MethodDeclaration): Method {
 function resolveBaseType(clauses: ts.NodeArray<ts.HeritageClause>): Type {
     for (let clause of clauses) {
         if (clause.token == ts.SyntaxKind.ExtendsKeyword) {
-            return resolveTypeReference(clause.types[0]);
+            let t = resolveExpressionWithTypeArguments(clause.types[0]);
+            return t;
         }
     }
     return undefined;
+}
+
+function resolveInterfaces(clauses: ts.NodeArray<ts.HeritageClause>): Type[] {
+    let types: Type[] = [];
+    for (let clause of clauses) {
+        if (clause.token == ts.SyntaxKind.ImplementsKeyword) {
+            for (let type of clause.types) {
+                let interfaceType = resolveExpressionWithTypeArguments(type);
+                types.push(interfaceType);
+            }
+        }
+    }
+    return types
 }
 
 function resolveParameters(parameterArray: ts.NodeArray<ts.ParameterDeclaration>): Parameter[] {
@@ -196,6 +286,45 @@ function resolveParameters(parameterArray: ts.NodeArray<ts.ParameterDeclaration>
         parameters.push(resolveParameter(item as any));
     }
     return parameters;
+}
+
+function resolveExpressionWithTypeArguments(token: ts.ExpressionWithTypeArguments) {
+    let referenceType: Type = new Type();
+    if (Array.isArray(token.typeArguments) && token.typeArguments.length > 0) {
+        referenceType.IsGeneric = true;
+        let genericDefinition: Type = new Type();
+        genericDefinition.FullName = resolvePropertyAccessExpression(token.expression as any);
+        genericDefinition.Name = genericDefinition.FullName[genericDefinition.FullName.length - 1];
+        genericDefinition.IsGenericDefinition = true;
+        referenceType.FullName = [...genericDefinition.FullName];
+        referenceType.Name = genericDefinition.Name;
+        referenceType.GenericDefinition = genericDefinition;
+        referenceType.GenericArguments = token.typeArguments.map(typeParameter => resolveType(typeParameter));
+    } else {
+        referenceType.FullName = resolvePropertyAccessExpression(token.expression as any);
+        referenceType.Name = referenceType.FullName[referenceType.FullName.length - 1];
+    }
+    return referenceType;
+}
+
+function resolvePropertyAccessExpression(token: ts.PropertyAccessExpression | ts.Identifier): string[] {
+    if (token.kind == ts.SyntaxKind.Identifier) {
+        let identifier = token as ts.Identifier;
+        let name = resolveIdentifier(identifier as any);
+        return [name];
+    } else if (token.kind == ts.SyntaxKind.PropertyAccessExpression) {
+        let propertyAccessExpression = token as ts.PropertyAccessExpression;
+        if(propertyAccessExpression.expression.kind == ts.SyntaxKind.PropertyAccessExpression) {
+            let parentNames = resolvePropertyAccessExpression(propertyAccessExpression.expression as any);
+            let name = resolveIdentifier(propertyAccessExpression.name as any);
+            return [...parentNames, name];
+        } else if (propertyAccessExpression.expression.kind == ts.SyntaxKind.Identifier) {
+            let parentName = resolveIdentifier(propertyAccessExpression.expression as any);
+            let name = resolveIdentifier(propertyAccessExpression.name as any);
+            return [parentName, name];
+        }
+    }
+    throw `token.kind: ${SyntaxKindMap[token.kind]}`;
 }
 
 function resolveParameter(token: ts.ParameterDeclaration): Parameter {
@@ -296,7 +425,7 @@ function resolveTypeReference(token: ts.TypeNode): Type {
       }
     }
     return referenceType;
-} 
+}
 
 function resolveTypeParameter(token: ts.TypeParameterDeclaration): Type {
     let name = token.name.text;

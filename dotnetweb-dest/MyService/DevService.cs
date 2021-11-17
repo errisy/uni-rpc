@@ -3,7 +3,7 @@ using System;
 using UniRpc.WebApplication;
 namespace MyService
 {
-    public abstract class DevService<Dog>: WebSocketServiceBase
+    public abstract class DevService<Dog> : WebSocketServiceBase
     {
         public DevService()
         {

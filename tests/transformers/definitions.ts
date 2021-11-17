@@ -5,6 +5,8 @@ export interface ILocalNameResolver {
     link(): void;
 }
 
+const CustomTypes = ['Message', 'MessageInterface', 'Service', 'ServiceInterface'];
+type CustomType = Message | MessageInterface | Service | ServiceInterface;
 export class Namespace implements ILocalNameResolver{
     Reflection: 'Namespace' = 'Namespace';
     Name: string;
@@ -12,7 +14,9 @@ export class Namespace implements ILocalNameResolver{
     Namespaces: Map<string, Namespace> = new Map();
     Messages: Message[] = [];
     Services: Service[] = [];
-    Children: Map<string, Namespace | Message | Service | Type> = new Map();
+    MessageInterfaces: MessageInterface[] = [];
+    ServiceInterfaces: ServiceInterface[] = [];
+    Children: Map<string, Namespace | Message | Service | MessageInterface | ServiceInterface | Type> = new Map();
     Parent: ILocalNameResolver;
     get NamespaceName(): string {
         return this.Fullname.join('.');
@@ -48,8 +52,8 @@ export class Namespace implements ILocalNameResolver{
         return (this.Parent as Namespace).tryMatchParent(parentName); // When there is parent namespace to match;
     }
     topdownResolve(fullname: string[]): Type | undefined {
-        if (fullname.length == 1 && this.Children.has(fullname[0]) && this.Children.get(fullname[0]).Reflection == 'Message') {
-            return (this.Children.get(fullname[0]) as any as Message).Type;
+        if (fullname.length == 1 && this.Children.has(fullname[0]) && CustomTypes.includes(this.Children.get(fullname[0]).Reflection)) {
+            return (this.Children.get(fullname[0]) as any as CustomType).Type;
         } else if (fullname.length > 1 && this.Children.has(fullname[0]) && this.Children.get(fullname[0]).Reflection == 'Namespace') {
             return (this.Children.get(fullname[0]) as Namespace).topdownResolve(fullname.slice(1));
         }
@@ -58,8 +62,8 @@ export class Namespace implements ILocalNameResolver{
     resolve(fullname: string[]): Type {
         if (fullname.length == 1) {
             let name = fullname[0];
-            if (this.Children.has(name) && this.Children.get(name).Reflection == 'Message') {
-                return (this.Children.get(name) as any as Message).Type;
+            if (this.Children.has(name) && CustomTypes.includes(this.Children.get(name).Reflection)) {
+                return (this.Children.get(fullname[0]) as any as CustomType).Type;
             }
         } else {
             for (let index of this.findMatchIndices(fullname)) {
@@ -115,11 +119,89 @@ export class Namespace implements ILocalNameResolver{
         this.Children.set(name, message);
         return message;
     }
+    addServiceInterface(nsName: string[], name: string): ServiceInterface {
+        let service = new ServiceInterface();
+        service.Namespace = nsName;
+        service.Name = name;
+        service.Fullname = [...nsName, name];
+        this.ServiceInterfaces.push(service);
+        this.Children.set(name, service);
+        return service;
+    }
+    addMessageInterface(nsName: string[], name: string): MessageInterface {
+        let message = new MessageInterface();
+        message.Namespace = nsName;
+        message.Name = name;
+        message.Fullname = [...nsName, name];
+        this.MessageInterfaces.push(message);
+        this.Children.set(name, message);
+        return message;
+    }
 }
 
 export class Message implements ILocalNameResolver {
     Base: Type;
+    Implementations: Type[];
     Reflection: 'Message' = 'Message';
+    Name: string;
+    Namespace: string[];
+    Fullname: string[];
+    Properties: Property[] = [];
+    IsGeneric: boolean;
+    GenericArguments: Type[] = [];
+    Type: Type;
+    Children: Map<string, Type> = new Map();
+    Parent: ILocalNameResolver;
+    buildChildren() {
+        this.Children.set(this.Name, this.Type);
+        if (this.IsGeneric) {
+            // The Message type itself can be a valid type
+            for (let genericArgument of this.GenericArguments) {
+                genericArgument.IsClassGenericPlaceholder = true;
+                this.Children.set(genericArgument.Name,  genericArgument);
+            }
+        }
+    }
+    resolve(fullname: string[]): Type {
+        if (fullname.length == 1 && this.Children.has(fullname[0])) {
+            // it is generic parameter type
+            return this.Children.get(fullname[0]);
+        }
+        return this.Parent.resolve(fullname);
+    }
+    build(parent: ILocalNameResolver) {
+        this.Parent = parent;
+        if (this.Base) {
+            this.Base.build(this);
+        }
+        if (Array.isArray(this.Implementations)) {
+            for (let implementation of this.Implementations) {
+                implementation.build(this);
+            }
+        }
+        this.buildChildren();
+        for (let property of this.Properties) {
+            property.build(this);
+        }
+    }
+    link() {
+        if (this.Base) {
+            this.Base.link();
+        }
+        if (Array.isArray(this.Implementations)) {
+            for (let implementation of this.Implementations) {
+                implementation.link();
+            }
+        }
+        for (let property of this.Properties) {
+            property.link();
+        }
+    }
+}
+
+export class MessageInterface implements ILocalNameResolver {
+    Base: Type;
+    Reflection: 'MessageInterface' = 'MessageInterface';
     Name: string;
     Namespace: string[];
     Fullname: string[];
@@ -157,9 +239,9 @@ export class Message implements ILocalNameResolver {
         }
     }
     link() {
-        // if (this.Base) {
-        //     this.Base.link();
-        // }
+        if (this.Base) {
+            this.Base.link();
+        }
         for (let property of this.Properties) {
             property.link();
         }
@@ -185,7 +267,65 @@ export class Property implements ILocalNameResolver {
 
 export class Service implements ILocalNameResolver{
     Base: Type;
+    Implementations: Type[];
     Reflection: 'Service' = 'Service';
+    Type: Type;
+    Name: string;
+    Namespace: string[];
+    Fullname: string[];
+    Methods: Method[] = [];
+    IsGeneric: boolean;
+    GenericArguments: Type[] = [];
+    Children: Map<string, Type> = new Map();
+    Parent: ILocalNameResolver;
+    buildChildren() {
+        if (this.IsGeneric) {
+            for (let genericArgument of this.GenericArguments) {
+                genericArgument.IsClassGenericPlaceholder = true;
+                this.Children.set(genericArgument.Name,  genericArgument);
+            }
+        }
+    }
+    resolve(fullname: string[]): Type {
+        if (this.IsGeneric && fullname.length == 1 && this.Children.has(fullname[0])) {
+            return this.Children.get(fullname[0]);
+        }
+        return this.Parent.resolve(fullname);
+    }
+    build(parent: ILocalNameResolver) {
+        this.Parent = parent;
+        if (this.Base) {
+            this.Base.build(this);
+        }
+        if (Array.isArray(this.Implementations)) {
+            for (let implementation of this.Implementations) {
+                implementation.build(this);
+            }
+        }
+        this.buildChildren();
+        for (let method of this.Methods) {
+            method.build(this);
+        }
+    }
+    link() {
+        if (this.Base) {
+            this.Base.link();
+        }
+        if (Array.isArray(this.Implementations)) {
+            for (let implementation of this.Implementations) {
+                implementation.link();
+            }
+        }
+        for (let method of this.Methods) {
+            method.link();
+        }
+    }
+}
+
+export class ServiceInterface implements ILocalNameResolver {
+    Base: Type;
+    Reflection: 'ServiceInterface' = 'ServiceInterface';
+    Type: Type;
     Name: string;
     Namespace: string[];
     Fullname: string[];
@@ -219,9 +359,9 @@ export class Service implements ILocalNameResolver{
         }
     }
     link() {
-        // if (this.Base) {
-        //     this.Base.link();
-        // }
+        if (this.Base) {
+            this.Base.link();
+        }
         for (let method of this.Methods) {
             method.link();
         }
@@ -299,7 +439,11 @@ export class Type implements ILocalNameResolver{
     Name: string;
     SystemType?: string;
     FullName: string[];
-    MessageReference: Message;
+    ReferenceType: 'SystemType' | 'Service' | 'Message' | 'ServiceInterface' | 'MessageInterface';
+    ServiceReference?: Service;
+    MessageReference?: Message;
+    MessageInterfaceReference?: MessageInterface;
+    ServiceInterfaceReference?: ServiceInterface;
     GenericDefinition?: Type;
     GenericArguments?: Type[];
     IsGeneric: boolean = false;

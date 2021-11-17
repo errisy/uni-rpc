@@ -6,7 +6,8 @@ import { SyntaxKindMap } from './SyntaxKindMap';
 import { SourceFileResovler } from './resolvers';
 import {} from 'ts-expose-internals';
 import { RPC, Target } from './rpc-configuration';
-import { CSharpBuilder } from './csharp';
+import * as CSharpWebsocketService from './csharp-websocket-service';
+import * as TypeScriptWebsocketClient from './typescript-websocket-angular-client';
 
 function readRPCConfig() {
   let data = fs.readFileSync('uni-rpc.yaml', 'utf-8');
@@ -19,8 +20,11 @@ const resolver = new SourceFileResovler();
 function emitFiles() {
   for(let target of config.rpc) {
     if (typeof target.cs == 'string') {
-      let csharp = new CSharpBuilder(resolver);
-      csharp.emit(target);
+      let transpiler = new CSharpWebsocketService.Transpiler(resolver);
+      transpiler.emit(target);
+    } else if (typeof target.ts == 'string') {
+      let transpiler = new TypeScriptWebsocketClient.Transpiler(resolver);
+      transpiler.emit(target);
     }
   }
 }

@@ -1,9 +1,9 @@
 
 namespace MyService
 {
-    public abstract class AdvancedMessage2
+    public class AdvancedMessage2 : MyService.SubService.SubService.SubMessage<string>
     {
-        public string __reflection { get; set; } = "MyService.AdvancedMessage2";
+        public override string __reflection { get; set; } = "MyService.AdvancedMessage2";
         public string story { get; set; }
     }
 }

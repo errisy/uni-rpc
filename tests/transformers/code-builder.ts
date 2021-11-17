@@ -1,11 +1,20 @@
 
+export type ImportBuilder = (imports: Set<string>, hierarchicalImports: Map<string, Map<string, string>>) => string;
 
 export class CodeBuilder {
     private imports: Set<string> = new Set();
+    private hierarchicalImports: Map<string, Map<string, string>> = new Map();
     private lines: string[] = [];
     private indent: number = 0;
+    constructor (private importBuilder: ImportBuilder) {}
     addImport(value: string) {
         this.imports.add(value);
+    }
+    addHierarchicalImports(source: string, name: string, alias?: string) {
+        if (!this.hierarchicalImports.has(source)) {
+            this.hierarchicalImports.set(source, new Map());
+        }
+        this.hierarchicalImports.get(source).set(name, alias);
     }
     appendLine(value: string, indent: number = 0) {
         let prefix = '';
@@ -22,11 +31,6 @@ export class CodeBuilder {
         }
     }
     build(): string {
-        let importNamespaces: string[] = [];
-        for (let importNs of this.imports) {
-            importNamespaces.push(`using ${importNs};`);
-        }
-        importNamespaces = importNamespaces.sort();
-        return `${importNamespaces.join('\r\n')}\r\n${this.lines.join('\r\n')}`;
+        return `${this.importBuilder(this.imports, this.hierarchicalImports)}\r\n${this.lines.join('\r\n')}`;
     }
 }

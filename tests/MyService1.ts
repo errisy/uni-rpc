@@ -43,13 +43,34 @@ namespace MyService {
         story: string;
     }
 
-    export class AdvancedMessage2 extends SubService.SubMessage<string> {
+    export interface ITestMessage {
+        prop: string;
+    }
+
+    export interface IUICloseService {
+        test(): Promise<string>;
+    }
+
+    export interface IUXService extends IUICloseService {
+        resolve(): void;
+    }
+
+    export interface IMXService {
+        testJob(): boolean;
+    }
+
+    export abstract class MXU implements IMXService, IUXService {
+        abstract testJob(): boolean;
+        abstract resolve(): void;
+        abstract test(): Promise<string>;
+    } 
+
+    export class AdvancedMessage2 extends SubService.SubService.SubMessage<string> {
         story: string;
     }
 }
 
 namespace MyService {
-    
     export enum StageEnum {
         Value = 'Value',
         Hello = 'Hello',
