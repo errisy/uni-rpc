@@ -12,6 +12,10 @@ namespace MyService
             __genericArguments = new List<string>().AsReadOnly();
         }
         public abstract bool testJob();
+        /// <summary>
+        /// comment 2 is not
+        /// just one line
+        /// </summary>
         public abstract void resolve();
         public abstract System.Threading.Tasks.Task<string> test();
         public override BaseMessage __invoke(BaseMessage message)

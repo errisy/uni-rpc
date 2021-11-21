@@ -1,0 +1,9 @@
+{
+    "name": "kegg-api",
+    "description": "",
+    "main": "lambda.js",
+    "devDependencies": {
+        "@types/node": "^13.9.2",
+        "aws-sdk": "^2.643.0"
+    }
+}

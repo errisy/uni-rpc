@@ -131,6 +131,7 @@ export class SourceFileResovler implements ILocalNameResolver {
         let nsName = this.buildCurrentNamespaceFullname();
         if (isAbstractClass(token)) {
             let service: Service = this.currentNamespace.addService(nsName, name);
+            service.Comments = resolveJsDocs(token.jsDoc);
             if (token.heritageClauses) {
                 service.Base = resolveBaseType(token.heritageClauses);
                 service.Implementations = resolveInterfaces(token.heritageClauses);
@@ -155,6 +156,7 @@ export class SourceFileResovler implements ILocalNameResolver {
             service.Type = serviceType;
         } else {
             let message: Message = this.currentNamespace.addMessage(nsName, name);
+            message.Comments = resolveJsDocs(token.jsDoc);
             if (token.heritageClauses) {
                 message.Base = resolveBaseType(token.heritageClauses);
                 message.Implementations = resolveInterfaces(token.heritageClauses);
@@ -188,6 +190,7 @@ export class SourceFileResovler implements ILocalNameResolver {
         }
         if (name.endsWith('Service')) {
             let serviceInterface = this.currentNamespace.addServiceInterface(nsName, name);
+            serviceInterface.Comments = resolveJsDocs(token.jsDoc);
             if (token.heritageClauses) {
                 serviceInterface.Base = resolveBaseType(token.heritageClauses);
             }
@@ -214,6 +217,7 @@ export class SourceFileResovler implements ILocalNameResolver {
             serviceInterface.Type = serviceType;
         } else if (name.endsWith('Message')) {
             let messageInterface = this.currentNamespace.addMessageInterface(nsName, name);
+            messageInterface.Comments = resolveJsDocs(token.jsDoc);
             if (token.heritageClauses) {
                 messageInterface.Base = resolveBaseType(token.heritageClauses);
             }
@@ -246,6 +250,7 @@ function resolveMethod(token: ts.MethodDeclaration): Method {
     let name = resolveName(token.name as any);
     let method = new Method();
     method.Name = name;
+    method.Comments = resolveJsDocs(token.jsDoc);
     if (token.typeParameters) {
         method.IsGeneric = true;
         for (let typeParameter of token.typeParameters) {
@@ -255,6 +260,36 @@ function resolveMethod(token: ts.MethodDeclaration): Method {
     method.Parameters = resolveParameters(token.parameters as any);
     method.ReturnType = resolveType(token.type as any); 
     return method;
+}
+
+function resolveJsDocs(tokens?: ts.JSDoc[]): string | undefined {
+    if (!Array.isArray(tokens)) return undefined;
+    let comments: string[] = [];
+    for (let token of tokens) {
+        if (token && token.kind == ts.SyntaxKind.JSDocComment) {
+            if (typeof token.comment == 'string') {
+                comments.push(token.comment);
+            } else {
+                let subcomments = resolveJsDocComments(token.comment);
+                if (typeof subcomments == 'string') comments.push(subcomments);
+            }
+        }
+    }
+    if (comments.length > 0) return comments.join('\n');
+    else return undefined;
+}
+
+function resolveJsDocComments(tokens?: ts.NodeArray<ts.JSDocComment>): string | undefined {
+    if (!Array.isArray(tokens)) return undefined;
+    let comments: string[] = [];
+    for (let token of tokens) {
+        let jsDocComment: ts.JSDocComment = token;
+        if(typeof jsDocComment.text == 'string') {
+            comments.push(jsDocComment.text);
+        }
+    }
+    if (comments.length > 0) return comments.join('\n');
+    else return undefined;
 }
 
 function resolveBaseType(clauses: ts.NodeArray<ts.HeritageClause>): Type {
@@ -329,6 +364,7 @@ function resolvePropertyAccessExpression(token: ts.PropertyAccessExpression | ts
 
 function resolveParameter(token: ts.ParameterDeclaration): Parameter {
     let parameter: Parameter = new Parameter();
+    parameter.Comments = resolveJsDocs(token.jsDoc);
     parameter.Name = resolveName(token.name);
     parameter.Type = resolveType(token.type);
     return parameter;
@@ -338,6 +374,7 @@ function resolveProperty(token: ts.PropertyDeclaration): Property {
     let name = resolveName(token.name as any);
     let stage: number = 0;
     let property = new Property();
+    property.Comments = resolveJsDocs(token.jsDoc);
     property.Name = name;
     for (let item of token.getChildren()) {
         switch (stage) {

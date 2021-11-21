@@ -143,6 +143,7 @@ export class Message implements ILocalNameResolver {
     Base: Type;
     Implementations: Type[];
     Reflection: 'Message' = 'Message';
+    Comments?: string;
     Name: string;
     Namespace: string[];
     Fullname: string[];
@@ -202,6 +203,7 @@ export class Message implements ILocalNameResolver {
 export class MessageInterface implements ILocalNameResolver {
     Base: Type;
     Reflection: 'MessageInterface' = 'MessageInterface';
+    Comments?: string;
     Name: string;
     Namespace: string[];
     Fullname: string[];
@@ -250,6 +252,7 @@ export class MessageInterface implements ILocalNameResolver {
 
 export class Property implements ILocalNameResolver {
     Reflection: 'Property' = 'Property';
+    Comments?: string;
     Name: string;
     Type: Type;
     Parent: ILocalNameResolver;
@@ -269,6 +272,7 @@ export class Service implements ILocalNameResolver{
     Base: Type;
     Implementations: Type[];
     Reflection: 'Service' = 'Service';
+    Comments?: string;
     Type: Type;
     Name: string;
     Namespace: string[];
@@ -325,6 +329,7 @@ export class Service implements ILocalNameResolver{
 export class ServiceInterface implements ILocalNameResolver {
     Base: Type;
     Reflection: 'ServiceInterface' = 'ServiceInterface';
+    Comments?: string;
     Type: Type;
     Name: string;
     Namespace: string[];
@@ -377,6 +382,7 @@ export class Method implements ILocalNameResolver {
     GenericArguments: Type[] = [];
     Children: Map<string, Type> = new Map();
     Parent: ILocalNameResolver;
+    Comments?: string;
     buildChildren() {
         if (this.IsGeneric) {
             for (let genericArgument of this.GenericArguments) {
@@ -421,6 +427,7 @@ export class Parameter implements ILocalNameResolver{
     Name: string;
     Type: Type;
     Parent: ILocalNameResolver;
+    Comments?: string;
     resolve(fullname: string[]): Type {
         // Only generic argument can resolve type. This is the function parameter.
         return this.Parent.resolve(fullname);

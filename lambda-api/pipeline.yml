@@ -1,0 +1,111 @@
+# this will download the lambda.zip from S3 and install it to target
+trigger:
+  branches:
+    include:
+    - dev/*
+    - main
+    - prod/*
+  paths:
+    include:
+    - 'kegg-api/*'
+
+# when this stack should be triggered by another project (usually a lambda layer)
+# resources:
+#   pipelines:
+#     - pipeline: 'referred-pipeline'
+#       project: '${AzureDevOpsProject}'
+#       source: 'referred-pipeline'
+#       trigger:
+#         branches:
+#         - dev/*
+#         - main
+#         - prod/*
+
+variables:
+- template: /environments.yml
+- name: project
+  value: 'kegg-api'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: |
+    rm -rf $(project)/dist
+  displayName: Delete the compiled JS files
+- task: Npm@1
+  displayName: Install Node Packages
+  inputs:
+    command: 'install'
+    workingDir: '$(project)'
+- task: compile-type-script@1
+  displayName: Compile the TypeScript project, output to $(project)/ folder
+  inputs:
+    compileType: '1'
+    projectPath: '$(project)/'
+- task: ArchiveFiles@2
+  displayName: Pack Compiled JS files into ZIP package
+  inputs:
+    rootFolderOrFile: '$(project)/build/'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(project)/dist/lambda.zip'
+    replaceExistingArchive: true
+- script: |
+    cp $(project)/cloudformation.yml $(project)/dist/
+  displayName: Create BuildID verions alias for zip package and CloudFormation
+- task: S3Upload@1
+  displayName: Upload all files to stacks folder in S3
+  inputs:
+    awsCredentials: '$(AWSAccountId)'
+    regionName: '$(AWSRegion)'
+    bucketName: '$(AWSAccountId)-$(AWSRegion)-stacks'
+    sourceFolder: '$(project)/dist'
+    globExpressions: '**'
+    targetFolder: '$(Application)/$(EnvironmentTarget)/$(Version)/$(project)/$(Build.BuildId)'
+    createBucket: true
+- task: LambdaInvokeFunction@1
+  continueOnError: true
+  displayName: Check the state of CloudFormation
+  inputs:
+    awsCredentials: '$(AWSAccountId)'
+    regionName: '$(AWSRegion)'
+    functionName: 'aws-devops-helper'
+    payload: |
+      {
+        "name": "$(Application)--$(project)--$(AWSRegion)--$(EnvironmentTarget)",
+        "query": "CloudFormationState"
+      }
+    outputVariable: 'ShouldDeleteStack'
+- task: CloudFormationDeleteStack@1
+  continueOnError: true
+  displayName: Delete the CloudFormation when necessary
+  condition: eq(variables.ShouldDeleteStack , '"true"')
+  inputs:
+    awsCredentials: '$(AWSAccountId)'
+    regionName: '$(AWSRegion)'
+    stackName: '$(Application)--$(project)--$(AWSRegion)--$(EnvironmentTarget)'
+- task: CloudFormationCreateOrUpdateStack@1
+  displayName: Run the CloudFormation Create/Update
+  inputs:
+    awsCredentials: '$(AWSAccountId)'
+    regionName: '$(AWSRegion)'
+    stackName: '$(Application)--$(project)--$(AWSRegion)--$(EnvironmentTarget)'
+    templateSource: 's3'
+    s3BucketName: '$(AWSAccountId)-$(AWSRegion)-stacks'
+    s3ObjectKey: '$(Application)/$(EnvironmentTarget)/$(Version)/$(project)/$(Build.BuildId)/cloudformation.yml'
+    templateParametersSource: 'inline'
+    templateParameters: |
+      [
+        {"ParameterKey":"AWSAccountId", "ParameterValue":"$(AWSAccountId)"},
+        {"ParameterKey":"AWSRegion", "ParameterValue":"$(AWSRegion)"},
+        {"ParameterKey":"Application", "ParameterValue":"$(Application)"},
+        {"ParameterKey":"Version", "ParameterValue":"$(Version)"},
+        {"ParameterKey":"Project", "ParameterValue":"$(project)"},
+        {"ParameterKey":"EnvironmentTarget", "ParameterValue":"$(EnvironmentTarget)"},
+        {"ParameterKey":"Runtime", "ParameterValue":"$(LambdaRuntimeNodeJS)"},
+        {"ParameterKey":"BuildId", "ParameterValue":"$(Build.BuildId)"}
+      ]
+    capabilityAutoExpand: true
+
+

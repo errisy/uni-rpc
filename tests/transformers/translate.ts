@@ -7,7 +7,8 @@ import { SourceFileResovler } from './resolvers';
 import {} from 'ts-expose-internals';
 import { RPC, Target } from './rpc-configuration';
 import * as CSharpWebsocketService from './csharp-websocket-service';
-import * as TypeScriptWebsocketClient from './typescript-websocket-angular-client';
+import * as TypeScriptWebsocketAngularClient from './typescript-websocket-angular-client';
+import * as TypeScriptWebsocketLambdaService from './typescript-websocket-lambda-service';
 
 function readRPCConfig() {
   let data = fs.readFileSync('uni-rpc.yaml', 'utf-8');
@@ -23,8 +24,17 @@ function emitFiles() {
       let transpiler = new CSharpWebsocketService.Transpiler(resolver);
       transpiler.emit(target);
     } else if (typeof target.ts == 'string') {
-      let transpiler = new TypeScriptWebsocketClient.Transpiler(resolver);
-      transpiler.emit(target);
+      switch (target.type) {
+        case 'websocket-angular-client': {
+          let transpiler = new TypeScriptWebsocketAngularClient.Transpiler(resolver);
+          transpiler.emit(target);
+        } break;
+        case 'websocket-lambda-service': {
+          let transpiler = new TypeScriptWebsocketLambdaService.Transpiler(resolver);
+          transpiler.emit(target);
+        } break;
+      }
+      
     }
   }
 }

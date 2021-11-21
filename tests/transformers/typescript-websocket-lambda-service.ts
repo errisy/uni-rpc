@@ -9,7 +9,7 @@ export class Transpiler {
     constructor (private resolver: SourceFileResovler) {
     }
     public emit(target: Target) {
-        if (typeof target.ts == 'string' && target.type == 'websocket-angular-client') {
+        if (typeof target.ts == 'string' && target.type == 'websocket-lambda-service') {
             let rootDirectory = ResolvePath(target.ts);
             this.copyBaseFiles(rootDirectory);
             for (let instance of this.resolver.Children.values()) {
@@ -26,7 +26,7 @@ export class Transpiler {
         console.log('Remove:', destination);
         Remove(destination);
         MakeDirectories(destination);
-        CopyDirectory('./transformers/typescript/websocket-angular-client', destination);
+        CopyDirectory('./transformers/typescript/websocket-lambda-service', destination);
     }
 }
 
@@ -259,9 +259,6 @@ module CodeGeneration {
             let filename = path.join(rootDirectory, ...this.instance.Namespace, this.instance.Name + '.ts');
             let builder: CodeBuilder = new CodeBuilder(importBuilder);
             let indent = 0;
-            builder.addHierarchicalImport('rxjs', 'Observable');
-            builder.addHierarchicalImport('rxjs/operators', 'map');
-            builder.addHierarchicalImport('@angular/core', 'Injectable');
             this.emitService(builder, indent);
             console.log('Write Code to:', filename);
             WriteFile(filename, builder.build(), 'utf-8');
@@ -290,9 +287,6 @@ module CodeGeneration {
         emitService(builder: CodeBuilder, indent: number) {
             let baseTypes: string[] = [];
             emitComments(builder, indent, this.instance.Comments);
-            builder.appendLine('@Injectable({', indent);
-            builder.appendLine(`providedIn: 'root'`, indent + 1);
-            builder.appendLine(`})`, indent);
             if (this.instance.Base) {
                 baseTypes.push(this.emitType(this.instance.Base, builder));
             } else {

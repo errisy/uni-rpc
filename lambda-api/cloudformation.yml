@@ -1,0 +1,89 @@
+Parameters:
+  AWSAccountId:
+    Type: String
+  AWSRegion:
+    Type: String
+  Application:
+    Type: String
+  Version:
+    Type: String
+  Project:
+    Type: String
+  EnvironmentTarget:
+    Type: String
+  Runtime:
+    Type: String
+  BuildId:
+    Type: String
+
+Resources:
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action:
+            - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AdministratorAccess
+  Lambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Sub ${AWSAccountId}-${AWSRegion}-stacks
+        S3Key: !Sub ${Application}/${EnvironmentTarget}/${Version}/${Project}/${BuildId}/lambda.zip
+      FunctionName: !Sub ${Application}--${Project}--${EnvironmentTarget}
+      Handler: lambda.handler
+      MemorySize: 512
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: !Sub ${Runtime}
+      Timeout: 60
+    # Add Layers Here
+      # Layers:
+      #   - Fn::Transform:
+      #       Name : cloudformation-utils
+      #       Parameters:
+      #         InputString: !Sub 'ProjectLayer@${Application}--[project-name]--${AWSRegion}--${EnvironmentTarget}'
+      #         Operation: Stack
+    # Add Environment Variables here
+      Environment:
+        Variables:
+          WebSocketConnectionsTable: !Sub ${Application}--api--${EnvironmentTarget}--websocket-connections
+          WebSocketUsersTable: !Sub ${Application}--api--${EnvironmentTarget}--websocket-users
+
+  ApiGatewayInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref Lambda
+      Principal: apigateway.amazonaws.com
+      
+  # if you want to schedule the lambda by timer
+  # LambdaRunnerRule:
+  #   Type: AWS::Events::Rule
+  #   Properties:
+  #     Description: 'Run the lambda at 00:00'
+  #     ScheduleExpression: 'cron(0 0 * * ? *)'
+  #     Name: !Sub '${Application}--${Project}--event-rule--${EnvironmentTarget}'
+  #     State: ENABLED
+  #     Targets:
+  #       - Arn: !GetAtt Lambda.Arn
+  #         Id: Invoke-Lambda
+  #         Input: !Sub |
+  #           { 
+  #             "name": "abc"
+  #           }
+
+  # PermissionToInvokeLambda: 
+  #   Type: AWS::Lambda::Permission
+  #   Properties: 
+  #     FunctionName: !Ref Lambda
+  #     Action: lambda:InvokeFunction
+  #     Principal: events.amazonaws.com
+  #     SourceArn: !GetAtt LambdaRunnerRule.Arn

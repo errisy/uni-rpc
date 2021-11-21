@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System;
 using UniRpc.WebApplication;
+using System.Threading.Tasks;
+
 namespace MyService
 {
     public abstract class DevService<Dog> : WebSocketServiceBase
@@ -16,6 +18,10 @@ namespace MyService
         public abstract string Test();
         public abstract float AB(double my);
         public abstract System.Collections.Generic.List<long> Gap(int value, bool enabled);
+        /// <summary>
+        /// release resource
+        /// <param name="cat">the cat instance</param>
+        /// </summary>
         public abstract byte[] Release<Cat>(Cat cat, Dog dog);
         public abstract MyService.Message GetMessage();
         public abstract void IncomingCall();

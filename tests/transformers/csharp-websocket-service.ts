@@ -113,6 +113,26 @@ module CodeGeneration {
         importNamespaces = importNamespaces.sort();
         return importNamespaces.join('\r\n');
     }
+
+    function emitComments(builder: CodeBuilder, indent: number, comments?: string, method?: Method) {
+        if (typeof comments != 'string') return;
+        builder.appendLine(`/// <summary>`, indent);
+        comments.split('\n')
+            .map(line => line.replace(/^\s*/ig, ''))
+            .map(line => line.replace(/\s*$/ig, ''))
+            .map(line => `/// ${line}`)
+            .forEach(line => {
+                builder.appendLine(line, indent);
+            });
+        if (method && Array.isArray(method.Parameters)) {
+            for (let parameter of method.Parameters) {
+                if (parameter.Comments) {
+                    builder.appendLine(`/// <param name="${parameter.Name}">${parameter.Comments}</param>`, indent)
+                }
+            }
+        }
+        builder.appendLine(`/// </summary>`, indent);
+    }
         
     class NamespaceEmitter {
         constructor(private instance: Namespace) {
@@ -178,6 +198,7 @@ module CodeGeneration {
             builder.addImport('System.Collections.Generic');
             builder.addImport('UniRpc.WebApplication');
             let baseTypes: string[] = [];
+            emitComments(builder, indent, this.instance.Comments);
             if (this.instance.Base) {
                 baseTypes.push(this.emitType(this.instance.Base, builder));
             } else {
@@ -221,6 +242,7 @@ module CodeGeneration {
             builder.appendLine(`}`, indent);
         }
         emitServiceMethod(builder: CodeBuilder, indent: number, method: Method) {
+            emitComments(builder, indent, method.Comments, method);
             if (method.IsGeneric) {
                 let genericArugments = method.GenericArguments
                     .map(arg => this.emitType(arg, builder))
@@ -305,6 +327,7 @@ module CodeGeneration {
             }
         }
         emitMessage(builder: CodeBuilder, indent: number) {
+            emitComments(builder, indent, this.instance.Comments);
             let heritage = this.emitHeritage(builder);
             if (this.instance.IsGeneric) {
                 let genericArugments = this.instance.GenericArguments
@@ -323,6 +346,7 @@ module CodeGeneration {
             builder.appendLine(`}`, indent);
         }
         emitProperty(builder: CodeBuilder, indent: number, property: Property) {
+            emitComments(builder, indent, property.Comments);
             builder.appendLine(`public ${this.emitType(property.Type, builder)} ${property.Name} { get; set; }`, indent);
         }
         emitType(typeInstance: Type, builder: CodeBuilder) {
@@ -355,6 +379,7 @@ module CodeGeneration {
             builder.addImport('System');
             builder.addImport('System.Collections.Generic');
             builder.addImport('UniRpc.WebApplication');
+            emitComments(builder, indent, this.instance.Comments);
             let heritage = this.emitHeritage(builder);
             if (this.instance.IsGeneric) {
                 let genericArugments = this.instance.GenericArguments
@@ -371,6 +396,7 @@ module CodeGeneration {
             builder.appendLine(`}`, indent);
         }
         emitServiceMethod(builder: CodeBuilder, indent: number, method: Method) {
+            emitComments(builder, indent, method.Comments, method);
             if (method.IsGeneric) {
                 let genericArugments = method.GenericArguments
                     .map(arg => this.emitType(arg, builder))
@@ -412,6 +438,7 @@ module CodeGeneration {
             else return ` : ${baseTypes.join(', ')}`;
         }
         emitMessageInterface(builder: CodeBuilder, indent: number) {
+            emitComments(builder, indent, this.instance.Comments);
             let heritage = this.emitHeritage(builder);
             if (this.instance.IsGeneric) {
                 let genericArugments = this.instance.GenericArguments
@@ -429,6 +456,7 @@ module CodeGeneration {
             builder.appendLine(`}`, indent);
         }
         emitProperty(builder: CodeBuilder, indent: number, property: Property) {
+            emitComments(builder, indent, property.Comments);
             builder.appendLine(`public ${this.emitType(property.Type, builder)} ${property.Name} { get; set; }`, indent);
         }
         emitType(typeInstance: Type, builder: CodeBuilder) {

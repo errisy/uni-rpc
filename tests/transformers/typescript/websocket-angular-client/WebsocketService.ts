@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { filter, first } from 'rxjs/operators';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { environment } from '../../environments/environment';
-import { BaseMessage } from './base-message';
+import { BaseMessage } from './BaseMessage';
 import { TokenHolder } from './token-holder.service';
 
 

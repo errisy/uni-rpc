@@ -1,0 +1,532 @@
+[
+    {
+        "Reflection": "Namespace",
+        "Namespaces": {},
+        "Messages": [
+            {
+                "Reflection": "Message",
+                "Properties": [
+                    {
+                        "Reflection": "Property",
+                        "Name": "name",
+                        "Type": {
+                            "Reflection": "Type",
+                            "IsGeneric": false,
+                            "IsGenericPlaceholder": false,
+                            "Name": "string",
+                            "SystemType": "string"
+                        }
+                    },
+                    {
+                        "Reflection": "Property",
+                        "Name": "value",
+                        "Type": {
+                            "Reflection": "Type",
+                            "IsGeneric": false,
+                            "IsGenericPlaceholder": false,
+                            "Name": "integer",
+                            "FullName": [
+                                "integer"
+                            ]
+                        }
+                    },
+                    {
+                        "Reflection": "Property",
+                        "Name": "tested",
+                        "Type": {
+                            "Reflection": "Type",
+                            "IsGeneric": false,
+                            "IsGenericPlaceholder": false,
+                            "Name": "boolean",
+                            "SystemType": "boolean"
+                        }
+                    },
+                    {
+                        "Reflection": "Property",
+                        "Name": "sub",
+                        "Type": {
+                            "Reflection": "Type",
+                            "IsGeneric": true,
+                            "IsGenericPlaceholder": false,
+                            "FullName": [
+                                "SubService",
+                                "SubMessage"
+                            ],
+                            "GenericArguments": [
+                                {
+                                    "Reflection": "Type",
+                                    "IsGeneric": false,
+                                    "IsGenericPlaceholder": false,
+                                    "Name": "Message",
+                                    "FullName": [
+                                        "Message"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "GenericArguments": [],
+                "Children": {},
+                "Namespace": [
+                    "MyService"
+                ],
+                "Name": "Message",
+                "Fullname": [
+                    "MyService",
+                    "Message"
+                ]
+            },
+            {
+                "Reflection": "Message",
+                "Properties": [
+                    {
+                        "Reflection": "Property",
+                        "Name": "test",
+                        "Type": {
+                            "Reflection": "Type",
+                            "IsGeneric": false,
+                            "IsGenericPlaceholder": false,
+                            "FullName": [
+                                "MyService",
+                                "OKS"
+                            ]
+                        }
+                    },
+                    {
+                        "Reflection": "Property",
+                        "Name": "okss",
+                        "Type": {
+                            "Reflection": "Type",
+                            "IsGeneric": true,
+                            "IsGenericPlaceholder": false,
+                            "Name": "Array",
+                            "GenericDefinition": {
+                                "Reflection": "Type",
+                                "IsGeneric": false,
+                                "IsGenericDefinition": true,
+                                "IsGenericPlaceholder": false,
+                                "Name": "Array",
+                                "SystemType": "Array"
+                            },
+                            "GenericArguments": [
+                                {
+                                    "Reflection": "Type",
+                                    "IsGeneric": false,
+                                    "IsGenericPlaceholder": false,
+                                    "FullName": [
+                                        "MyService",
+                                        "OKS"
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "Reflection": "Property",
+                        "Name": "cheese",
+                        "Type": {
+                            "Reflection": "Type",
+                            "IsGeneric": true,
+                            "IsGenericPlaceholder": false,
+                            "Name": "List",
+                            "FullName": [
+                                "List"
+                            ],
+                            "GenericArguments": [
+                                {
+                                    "Reflection": "Type",
+                                    "IsGeneric": false,
+                                    "IsGenericPlaceholder": false,
+                                    "FullName": [
+                                        "MyService",
+                                        "OKS"
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "Reflection": "Property",
+                        "Name": "use",
+                        "Type": {
+                            "Reflection": "Type",
+                            "IsGeneric": true,
+                            "IsGenericPlaceholder": false,
+                            "Name": "Dict",
+                            "FullName": [
+                                "Dict"
+                            ],
+                            "GenericArguments": [
+                                null,
+                                {
+                                    "Reflection": "Type",
+                                    "IsGeneric": false,
+                                    "IsGenericPlaceholder": false,
+                                    "FullName": [
+                                        "MyService",
+                                        "OKS"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "GenericArguments": [],
+                "Children": {},
+                "Namespace": [
+                    "MyService"
+                ],
+                "Name": "OKS",
+                "Fullname": [
+                    "MyService",
+                    "OKS"
+                ]
+            }
+        ],
+        "Services": [
+            {
+                "Reflection": "Service",
+                "Methods": [
+                    {
+                        "Reflection": "Method",
+                        "GenericArguments": [],
+                        "Children": {},
+                        "Name": "Send",
+                        "Parameters": [
+                            {
+                                "Reflection": "Argument",
+                                "Name": "message",
+                                "Type": {
+                                    "Reflection": "Type",
+                                    "IsGeneric": false,
+                                    "IsGenericPlaceholder": false,
+                                    "Name": "Message",
+                                    "FullName": [
+                                        "Message"
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "Reflection": "Method",
+                        "GenericArguments": [],
+                        "Children": {},
+                        "Name": "Get",
+                        "Parameters": []
+                    },
+                    {
+                        "Reflection": "Method",
+                        "GenericArguments": [],
+                        "Children": {},
+                        "Name": "StoryCount",
+                        "Parameters": [],
+                        "ReturnType": {
+                            "Reflection": "Type",
+                            "IsGeneric": false,
+                            "IsGenericPlaceholder": false,
+                            "Name": "float",
+                            "SystemType": "float"
+                        }
+                    },
+                    {
+                        "Reflection": "Method",
+                        "GenericArguments": [],
+                        "Children": {},
+                        "Name": "Test",
+                        "Parameters": []
+                    },
+                    {
+                        "Reflection": "Method",
+                        "GenericArguments": [],
+                        "Children": {},
+                        "Name": "AB",
+                        "Parameters": [
+                            {
+                                "Reflection": "Argument",
+                                "Name": "my",
+                                "Type": {
+                                    "Reflection": "Type",
+                                    "IsGeneric": false,
+                                    "IsGenericPlaceholder": false,
+                                    "Name": "double",
+                                    "FullName": [
+                                        "double"
+                                    ]
+                                }
+                            }
+                        ],
+                        "ReturnType": {
+                            "Reflection": "Type",
+                            "IsGeneric": false,
+                            "IsGenericPlaceholder": false,
+                            "Name": "float",
+                            "FullName": [
+                                "float"
+                            ]
+                        }
+                    },
+                    {
+                        "Reflection": "Method",
+                        "GenericArguments": [],
+                        "Children": {},
+                        "Name": "Gap",
+                        "Parameters": [
+                            {
+                                "Reflection": "Argument",
+                                "Name": "value",
+                                "Type": {
+                                    "Reflection": "Type",
+                                    "IsGeneric": false,
+                                    "IsGenericPlaceholder": false,
+                                    "Name": "integer",
+                                    "FullName": [
+                                        "integer"
+                                    ]
+                                }
+                            },
+                            {
+                                "Reflection": "Argument",
+                                "Name": "enabled"
+                            }
+                        ],
+                        "ReturnType": {
+                            "Reflection": "Type",
+                            "IsGeneric": true,
+                            "IsGenericPlaceholder": false,
+                            "Name": "List",
+                            "FullName": [
+                                "List"
+                            ],
+                            "GenericArguments": [
+                                {
+                                    "Reflection": "Type",
+                                    "IsGeneric": false,
+                                    "IsGenericPlaceholder": false,
+                                    "Name": "long",
+                                    "FullName": [
+                                        "long"
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "Reflection": "Method",
+                        "GenericArguments": [
+                            {
+                                "Reflection": "Type",
+                                "IsGeneric": false,
+                                "IsGenericPlaceholder": true,
+                                "Name": "Cat"
+                            }
+                        ],
+                        "Children": {},
+                        "Name": "Release",
+                        "IsGeneric": true,
+                        "Parameters": [
+                            {
+                                "Reflection": "Argument",
+                                "Name": "cat",
+                                "Type": {
+                                    "Reflection": "Type",
+                                    "IsGeneric": false,
+                                    "IsGenericPlaceholder": false,
+                                    "Name": "Cat",
+                                    "FullName": [
+                                        "Cat"
+                                    ]
+                                }
+                            },
+                            {
+                                "Reflection": "Argument",
+                                "Name": "dog",
+                                "Type": {
+                                    "Reflection": "Type",
+                                    "IsGeneric": false,
+                                    "IsGenericPlaceholder": false,
+                                    "Name": "Dog",
+                                    "FullName": [
+                                        "Dog"
+                                    ]
+                                }
+                            }
+                        ],
+                        "ReturnType": {
+                            "Reflection": "Type",
+                            "IsGeneric": false,
+                            "IsGenericPlaceholder": false,
+                            "Name": "bytes",
+                            "FullName": [
+                                "bytes"
+                            ]
+                        }
+                    },
+                    {
+                        "Reflection": "Method",
+                        "GenericArguments": [],
+                        "Children": {},
+                        "Name": "GetMessage",
+                        "Parameters": [],
+                        "ReturnType": {
+                            "Reflection": "Type",
+                            "IsGeneric": false,
+                            "IsGenericPlaceholder": false,
+                            "Name": "Message",
+                            "FullName": [
+                                "Message"
+                            ]
+                        }
+                    }
+                ],
+                "GenericArguments": [
+                    {
+                        "Reflection": "Type",
+                        "IsGeneric": false,
+                        "IsGenericPlaceholder": true,
+                        "Name": "Dog"
+                    }
+                ],
+                "Children": {},
+                "Namespace": [
+                    "MyService"
+                ],
+                "Name": "DevService",
+                "Fullname": [
+                    "MyService",
+                    "DevService"
+                ],
+                "IsGeneric": true
+            }
+        ],
+        "Children": {},
+        "Name": "MyService",
+        "Fullname": [
+            "MyService"
+        ],
+        "Parent": {
+            "NamespaceStack": [],
+            "Children": {},
+            "PredefinedTypes": {}
+        }
+    },
+    {
+        "Reflection": "Namespace",
+        "Namespaces": {},
+        "Messages": [
+            {
+                "Reflection": "Message",
+                "Properties": [
+                    {
+                        "Reflection": "Property",
+                        "Name": "message",
+                        "Type": {
+                            "Reflection": "Type",
+                            "IsGeneric": false,
+                            "IsGenericPlaceholder": false,
+                            "Name": "Message",
+                            "FullName": [
+                                "Message"
+                            ]
+                        }
+                    }
+                ],
+                "GenericArguments": [
+                    {
+                        "Reflection": "Type",
+                        "IsGeneric": false,
+                        "IsGenericPlaceholder": true,
+                        "Name": "T"
+                    }
+                ],
+                "Children": {},
+                "Namespace": [
+                    "MyService",
+                    "SubService"
+                ],
+                "Name": "SubMessage",
+                "Fullname": [
+                    "MyService",
+                    "SubService",
+                    "SubMessage"
+                ],
+                "IsGeneric": true
+            }
+        ],
+        "Services": [],
+        "Children": {},
+        "Name": "SubService",
+        "Fullname": [
+            "MyService",
+            "SubService"
+        ]
+    },
+    {
+        "Reflection": "Namespace",
+        "Namespaces": {},
+        "Messages": [
+            {
+                "Reflection": "Message",
+                "Properties": [
+                    {
+                        "Reflection": "Property",
+                        "Name": "value",
+                        "Type": {
+                            "Reflection": "Type",
+                            "IsGeneric": true,
+                            "IsGenericPlaceholder": false,
+                            "Name": "List",
+                            "FullName": [
+                                "List"
+                            ],
+                            "GenericArguments": [
+                                {
+                                    "Reflection": "Type",
+                                    "IsGeneric": true,
+                                    "IsGenericPlaceholder": false,
+                                    "Name": "Array",
+                                    "GenericArguments": [
+                                        {
+                                            "Reflection": "Type",
+                                            "IsGeneric": false,
+                                            "IsGenericPlaceholder": false,
+                                            "Name": "Thrift",
+                                            "FullName": [
+                                                "Thrift"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "GenericArguments": [
+                    {
+                        "Reflection": "Type",
+                        "IsGeneric": false,
+                        "IsGenericPlaceholder": true,
+                        "Name": "Thrift"
+                    }
+                ],
+                "Children": {},
+                "Namespace": [
+                    "USE"
+                ],
+                "Name": "Tom",
+                "Fullname": [
+                    "USE",
+                    "Tom"
+                ],
+                "IsGeneric": true
+            }
+        ],
+        "Services": [],
+        "Children": {},
+        "Name": "USE",
+        "Fullname": [
+            "USE"
+        ]
+    }
+]

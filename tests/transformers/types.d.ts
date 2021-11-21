@@ -32,3 +32,16 @@ declare class Source<T> {}
 
 /** The observable sink */
 declare class Sink<T> {}
+
+declare class EventEmitter<T> {
+    Emit(message: T): void;
+}
+
+declare interface IGroupDescriptor {
+    AllowServices(...services: Function[]): IGroupDescriptor;
+    AllowMethods(...methods: CallableFunction[]): IGroupDescriptor;
+}
+
+declare class __GroupManager {
+    static Declare(name: string): IGroupDescriptor;
+}
