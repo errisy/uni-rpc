@@ -13,16 +13,16 @@ import { TokenHolder } from './token-holder.service';
 })
 export class WebsocketService {
   subject: WebSocketSubject<BaseMessage>;
-  tracking: {[serial: string]: any} = {};
+  tracking: {[Id: string]: any} = {};
   constructor(public token: TokenHolder) {
     console.log(`connect to ${environment.webSocketUri}`);
     this.subject = webSocket(`${environment.webSocketUri}?token=${token.Access}`);
     this.subject.subscribe(item => {
-      if (!item.serial) {
-        console.warn('the incoming message has no "serial" attribute:', item);
+      if (!item.Id) {
+        console.warn('the incoming message has no "Id" attribute:', item);
         console.warn(this.tracking);
       } else {
-        delete this.tracking[item.serial];
+        delete this.tracking[item.Id];
         console.log('incoming:', item);
       }
     });
@@ -49,7 +49,7 @@ export class WebsocketService {
     message.Id = Id;
     this.tracking[Id] = message;
     console.log('tracking:', this.tracking);
-    let pipe = this.subject.pipe(filter(item => item.serial == Id)).pipe(first());
+    let pipe = this.subject.pipe(filter(item => item.Id == Id)).pipe(first());
     this.subject.next(message);
     return pipe as any;
   }

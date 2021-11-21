@@ -247,9 +247,9 @@ module CodeGeneration {
                 let genericArugments = method.GenericArguments
                     .map(arg => this.emitType(arg, builder))
                     .join(', ');
-                    builder.appendLine(`public abstract ${this.emitType(method.ReturnType, builder)} ${method.Name}<${genericArugments}>(${this.emitMethodParameters(method.Parameters, builder)});`, indent);
+                    builder.appendLine(`public abstract System.Threading.Tasks.Task<${this.emitType(method.ReturnType, builder)}> ${method.Name}<${genericArugments}>(${this.emitMethodParameters(method.Parameters, builder)});`, indent);
             } else {
-                builder.appendLine(`public abstract ${this.emitType(method.ReturnType, builder)} ${method.Name}(${this.emitMethodParameters(method.Parameters, builder)});`, indent);
+                builder.appendLine(`public abstract System.Threading.Tasks.Task<${this.emitType(method.ReturnType, builder)}> ${method.Name}(${this.emitMethodParameters(method.Parameters, builder)});`, indent);
             }
         }
         emitType(typeInstance: Type, builder: CodeBuilder) {
@@ -261,7 +261,7 @@ module CodeGeneration {
                 .join(', ');
         }
         emitServiceInvokeMethod(builder: CodeBuilder, indent: number) {
-            builder.appendLine(`public override BaseMessage __invoke(BaseMessage message)`, indent);
+            builder.appendLine(`public override async System.Threading.Tasks.Task<BaseMessage> __invoke(BaseMessage message)`, indent);
             builder.appendLine(`{`, indent);
             let switchIndent = indent + 1;
             let caseIndent = switchIndent + 1;
@@ -287,7 +287,7 @@ module CodeGeneration {
                     builder.appendLine(`${method.Name}(${parameterNames});`, contentIndent);
                     builder.appendLine(`break;`, contentIndent);
                 } else {
-                    builder.appendLine(`return message.ReturnMessage(${method.Name}(${parameterNames}));`, contentIndent);
+                    builder.appendLine(`return message.ReturnMessage(await ${method.Name}(${parameterNames}));`, contentIndent);
                 }
                 builder.appendLine(`}`, blockIndent);
             }

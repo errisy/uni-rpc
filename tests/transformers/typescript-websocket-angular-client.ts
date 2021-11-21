@@ -424,7 +424,7 @@ module CodeGeneration {
             }
             builder.appendLine(`{`, indent);
             let fullname = this.instance.Fullname.join('.');
-            builder.appendLine(`public ${this.instance.Base ? 'override' : 'virtual'} string __reflection { get; set; } = "${fullname}";`, indent + 1);
+            builder.appendLine(`public __reflection: string = "${fullname}";`, indent + 1);
             for (let property of this.instance.Properties) {
                 this.emitProperty(builder, indent + 1, property);
             }

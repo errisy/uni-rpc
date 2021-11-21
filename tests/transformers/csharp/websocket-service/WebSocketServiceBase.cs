@@ -12,7 +12,7 @@ namespace UniRpc.WebApplication
         public Subject<BaseMessage> __outgoing { get; set; }
         public string __user { get; set; }
         public string __group { get; set; }
-        public virtual BaseMessage __invoke(BaseMessage message)
+        public virtual async System.Threading.Tasks.Task<BaseMessage> __invoke(BaseMessage message)
         {
             throw new NotImplementedException();
         }

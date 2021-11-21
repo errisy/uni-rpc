@@ -55,12 +55,12 @@ namespace UniRpc.WebApplication
                 .Where(json => json != null);
 
             incomingJson
-                .Subscribe(message =>
+                .Subscribe(async message =>
                 {
                     if (Services.ContainsKey(message.Service))
                     {
                         var type = Services[message.Service];
-                        var returnMessage = Services[message.Service].__invoke(message);
+                        var returnMessage = await Services[message.Service].__invoke(message);
                         sending.OnNext(returnMessage.Serialize());
                     }
                 });
