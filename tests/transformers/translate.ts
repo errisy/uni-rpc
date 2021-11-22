@@ -60,6 +60,7 @@ function translate(sourceFile: ts.SourceFile) {
       
       // WriteFile('./uni-rpc.json', JSON.stringify(results, getCircularReplacer(), 4));
       emitFiles();
+      console.log('groups:', resolver.Groups);
     }
   }
 

@@ -86,13 +86,4 @@ namespace MyService {
     }
 }
 
-__GroupManager.Declare('Adminstrators')
-.AllowMethods(
-    MyService.DevService.prototype.AB,
-    MyService.MXU.prototype.resolve
-    )
-.AllowServices(MyService.DevService);
-
-__GroupManager.Declare('Users')
-.AllowServices(MyService.MXU);
 

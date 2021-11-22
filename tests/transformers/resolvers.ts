@@ -2,6 +2,8 @@ import {ILocalNameResolver, Namespace, Service, Message, Method, Parameter as Pa
     BooleanType, StringType, FloatType, DoubleType, IntegerType, LongType, BytesType, ListType, DictType, ArrayType, VoidType, ServiceInterface, MessageInterface, PromiseType} from './definitions';
 import * as ts from 'typescript';
 import { SyntaxKindMap } from './SyntaxKindMap';
+import { GroupAuthorization, GroupManagement, GroupServiceAuthorization } from './group-management';
+import { ExpressionChainParser, HostVariable, MemberCall, PropertyAccess } from './expression-parser';
 
 export class SourceFileResovler implements ILocalNameResolver {
     NamespaceStack: Namespace[] = [];
@@ -9,6 +11,7 @@ export class SourceFileResovler implements ILocalNameResolver {
     Parent: ILocalNameResolver; // This will not be set, because this is the root node of the tree.
     PredefinedTypes: Map<string, Type> = new Map();
     private currentSourceFilename: string;
+    Groups: Map<string, GroupManagement> = new Map();
     constructor() {
         this.PredefinedTypes.set('boolean', BooleanType);
         this.PredefinedTypes.set('string', StringType);
@@ -60,6 +63,15 @@ export class SourceFileResovler implements ILocalNameResolver {
             switch (child.kind) {
                 case ts.SyntaxKind.ModuleDeclaration: {
                     this.resolveModule(child as any);
+                } break;
+                case ts.SyntaxKind.EnumDeclaration: {
+                    this.resolveEnum(child as any);
+                } break;
+                case ts.SyntaxKind.ExpressionStatement: {
+                    this.resolveStatement(child as any);
+                } break;
+                default: {
+                    console.log('default:', SyntaxKindMap[child.kind], child.getText());
                 } break;
             }
         }
@@ -124,6 +136,84 @@ export class SourceFileResovler implements ILocalNameResolver {
             }
         }
         this.NamespaceStack.pop();
+    }
+
+    /** resolve Enum UserGroups */
+    private resolveEnum(token: ts.EnumDeclaration) {
+        let name: string = token.symbol.escapedName.toString();
+        if (!this.Groups.has(name)) {
+            this.Groups.set(name, new GroupManagement());
+        }
+        let group = this.Groups.get(name);
+        for (let member of token.members) {
+            let memberName = member.symbol.escapedName.toString();
+            group.Members.add(memberName);
+        }
+    }
+
+    /** resolve Statement for GroupSetup */
+    private resolveStatement(token: ts.ExpressionStatement) {
+        
+        if (token.expression.kind == ts.SyntaxKind.CallExpression) {
+            let parser = new ExpressionChainParser();
+            parseExpressionChain(token.expression as any, parser);
+            let hostVariable = parser.Chain.shift() as HostVariable;
+            switch (hostVariable.Identifier) {
+                case '__GroupManager': {
+                    let setMethod = parser.Chain.shift() as MemberCall;
+                    if (setMethod.Name == 'Set') {
+                        let group = setMethod.Arguments[0];
+                        let groupPolicy = group[0];
+                        let groupMember = group[1];
+                        if (!this.Groups.has(groupPolicy)) {
+                            let groupManagement = new GroupManagement();
+                            groupManagement.Name = groupPolicy;
+                            this.Groups.set(groupPolicy, groupManagement);
+                        }
+                        let groupManagement = this.Groups.get(groupPolicy);
+                        if (!groupManagement.Authorizations.has(groupMember)) {
+                            groupManagement.Authorizations.set(groupMember, new GroupAuthorization());
+                        }
+                        let groupAuthorization = groupManagement.Authorizations.get(groupMember);
+                        for (let authorizationClause of parser.Chain) {
+                            let memberAllow = authorizationClause as MemberCall;
+                            switch (memberAllow.Name) {
+                                case 'AllowMethods': {
+                                    for (let argument of memberAllow.Arguments) {
+                                        if (argument.length > 2 && argument[argument.length - 2] == 'prototype') {
+                                            let service = argument.slice(0, argument.length - 2).join('.');
+                                            let method = argument[argument.length - 1];
+                                            if (!groupAuthorization.Services.has(service)) {
+                                                let serviceAuthorization = new GroupServiceAuthorization();
+                                                serviceAuthorization.Name = argument.slice(0, argument.length - 2);
+                                                groupAuthorization.Services.set(service, serviceAuthorization);
+                                            }
+                                            let serviceAuthorization = groupAuthorization.Services.get(service);
+                                            serviceAuthorization.AllowMethods.add(method);
+                                        }
+                                    }
+                                } break;
+                                case 'AllowServices': {
+                                    for (let argument of memberAllow.Arguments) {
+                                        let service = argument.join('.');
+                                        if (!groupAuthorization.Services.has(service)) {
+                                            let serviceAuthorization = new GroupServiceAuthorization();
+                                            serviceAuthorization.Name = argument;
+                                            groupAuthorization.Services.set(service, serviceAuthorization);
+                                        }
+                                        let serviceAuthorization = groupAuthorization.Services.get(service);
+                                        serviceAuthorization.AllowAll = true;
+                                        if (serviceAuthorization.AllowMethods.size > 0) {
+                                            serviceAuthorization.AllowMethods.clear();
+                                        }
+                                    }
+                                } break;
+                            }
+                        }
+                    }
+                } break;
+            }
+        }
     }
 
     private resolveClass(token: ts.ClassDeclaration) {
@@ -524,4 +614,61 @@ function resolveName(name: ts.BindingName): string {
         console.log('resolveName:', child.getFullText(), SyntaxKindMap[child.kind])
     }
     return name.getText();
+}
+
+function parseExpressionChain(token: ts.CallExpression | ts.PropertyAccessExpression | ts.Identifier, chain: ExpressionChainParser) {
+    switch(token.kind) {
+        case ts.SyntaxKind.CallExpression: {
+            for(let argument of token.arguments) {
+                let argumentExpression = resolvePropertyAccessExpression(argument as any);
+                chain.Arguments.push(argumentExpression);
+            }
+            chain.LastKind = ts.SyntaxKind.CallExpression;
+            parseExpressionChain(token.expression as any, chain);
+        } break;
+        case ts.SyntaxKind.PropertyAccessExpression: {
+            let propertyAccessExpression = token as ts.PropertyAccessExpression;
+            let name = resolveIdentifier(propertyAccessExpression.name as any);
+            switch (chain.LastKind) {
+                case ts.SyntaxKind.CallExpression: {
+                    let memberCall = new MemberCall();
+                    memberCall.Arguments = chain.Arguments;
+                    memberCall.Name = name;
+                    chain.Chain.unshift(memberCall);
+                    chain.Arguments = [];
+                } break;
+                case ts.SyntaxKind.PropertyAccessExpression: {
+                    let hostVariable = new HostVariable();
+                    hostVariable.Identifier = name;
+                    chain.Chain.unshift(hostVariable);
+                    chain.Arguments = [];
+                } break;
+            }
+            chain.LastKind = ts.SyntaxKind.PropertyAccessExpression;
+            parseExpressionChain(token.expression as any, chain);
+        } break;
+        case ts.SyntaxKind.Identifier: {
+            let identifier = token as ts.Identifier;
+            let name = resolveIdentifier(identifier as any);
+            switch (chain.LastKind) {
+                case ts.SyntaxKind.CallExpression: {
+                    let memberCall = new MemberCall();
+                    memberCall.Arguments = chain.Arguments;
+                    memberCall.Name = name;
+                    chain.Chain.unshift(memberCall);
+                    chain.Arguments = [];
+                } break;
+                case ts.SyntaxKind.PropertyAccessExpression: {
+                    let hostVariable = new HostVariable();
+                    hostVariable.Identifier = name;
+                    chain.Chain.unshift(hostVariable);
+                    chain.Arguments = [];
+                } break;
+            }
+        } break;
+        default: {
+            let node: ts.Expression = token as any;
+            console.log('parseExpressionChain', SyntaxKindMap[node.kind], node.getText());
+        } break;
+    }
 }

@@ -302,15 +302,16 @@ module CodeGeneration {
                 let genericArugments = this.instance.GenericArguments
                     .map(arg => this.emitType(arg, builder))
                     .join(', ');
-                builder.appendLine(`export class ${this.instance.Name}<${genericArugments}>${heritage}`, indent);
+                builder.appendLine(`export abstract class ${this.instance.Name}<${genericArugments}>${heritage}`, indent);
             } else {
-                builder.appendLine(`export class ${this.instance.Name}${heritage}`, indent);
+                builder.appendLine(`export abstract class ${this.instance.Name}${heritage}`, indent);
             }
             builder.appendLine(`{`, indent);
             this.emitServiceConstructor(builder, indent + 1);
             for (let method of this.instance.Methods) {
                 this.emitServiceMethod(builder, indent + 1, method);
             }
+            this.emitServiceInvokeMethod(builder, indent + 1);
             builder.appendLine(`}`, indent);
         }
         emitServiceConstructor(builder: CodeBuilder, indent: number) {
@@ -323,14 +324,14 @@ module CodeGeneration {
                 builder.appendLine(`super();`, indent + 1);
             }
             builder.appendLine(`this.__reflection = "${fullname}";`, indent + 1);
-            if (this.instance.IsGeneric) {
-                let genericTypeNames = this.instance.GenericArguments
-                    .map(arg => `typeof(${arg.Name}).FullName`)
-                    .join(', ');
-                builder.appendLine(`this.__genericArguments = [${genericTypeNames}];`, indent + 1);
-            } else {
-                builder.appendLine(`this.__genericArguments = [];`, indent + 1);
-            }
+            // if (this.instance.IsGeneric) {
+            //     let genericTypeNames = this.instance.GenericArguments
+            //         .map(arg => `typeof(${arg.Name}).FullName`)
+            //         .join(', ');
+            //     builder.appendLine(`this.__genericArguments = [${genericTypeNames}];`, indent + 1);
+            // } else {
+            //     builder.appendLine(`this.__genericArguments = [];`, indent + 1);
+            // }
             builder.appendLine(`}`, indent);
         }
         emitServiceMethod(builder: CodeBuilder, indent: number, method: Method) {
@@ -340,31 +341,10 @@ module CodeGeneration {
                 let genericArugments = method.GenericArguments
                     .map(arg => this.emitType(arg, builder))
                     .join(', ');
-                    builder.appendLine(`public ${method.Name}<${genericArugments}>(${this.emitMethodParameters(method.Parameters, builder)}): Observable<${this.emitType(method.ReturnType, builder)}> {`, indent);
-                    this.emitMethodContent(builder, methodContentIndent, method);
-                    builder.appendLine(`}`, indent);
+                    builder.appendLine(`public abstract ${method.Name}<${genericArugments}>(${this.emitMethodParameters(method.Parameters, builder)}): Promise<${this.emitType(method.ReturnType, builder)}>;`, indent);
             } else {
-                builder.appendLine(`public ${method.Name}(${this.emitMethodParameters(method.Parameters, builder)}): Observable<${this.emitType(method.ReturnType, builder)}> {`, indent);
-                this.emitMethodContent(builder, methodContentIndent, method);
-                builder.appendLine(`}`, indent);
+                builder.appendLine(`public abstract ${method.Name}(${this.emitMethodParameters(method.Parameters, builder)}): Promise<${this.emitType(method.ReturnType, builder)}>;`, indent);
             }
-        }
-        emitMethodContent(builder: CodeBuilder, indent: number, method: Method) {
-                    builder.appendMultipleLines(
-`return this.__websocketService.send({
-    Service: '${this.instance.Fullname.join('.')}',
-    Method: '${method.Name}',
-    GenericArguments: [],
-    Payload: {`, indent);
-            for (let i = 0; i < method.Parameters.length; ++i) {
-                let parameter = method.Parameters[i];
-                builder.appendLine(`${parameter.Name}: ${parameter.Name}${(i < method.Parameters.length - 1) ? ',' : ''}`, indent + 2);
-            }
-            builder.appendMultipleLines(
-`    }
-}).pipe(map(__result => {
-    return __result.Payload as ${this.emitType(method.ReturnType, builder)};
-}));`, indent);
         }
         emitType(typeInstance: Type, builder: CodeBuilder) {
             return CodeGeneration.mapType(typeInstance, builder, this.instance.Fullname);
@@ -373,6 +353,40 @@ module CodeGeneration {
             return parameters
                 .map(parameter => `${emitParameterComments(parameter.Comments)}${parameter.Name}: ${this.emitType(parameter.Type, builder)}`)
                 .join(', ');
+        }
+        emitServiceInvokeMethod(builder: CodeBuilder, indent: number) {
+            builder.appendLine(`public async __invoke(BaseMessage message): Promise<BaseMessage> {`, indent);
+            let switchIndent = indent + 1;
+            let caseIndent = switchIndent + 1;
+            let blockIndent = caseIndent + 1;
+            let contentIndent = blockIndent + 1;
+            builder.appendLine(`switch (message.Method)`, switchIndent);
+            builder.appendLine(`{`, switchIndent);
+            for (let method of this.instance.Methods) {
+                builder.appendLine(`case "${method.Name}":`, caseIndent);
+                builder.appendLine(`{`, blockIndent);
+                for (let parameter of method.Parameters) {
+                    if (parameter.Type.Reference.IsGenericPlaceholder && !parameter.Type.Reference.IsClassGenericPlaceholder) {
+                        builder.appendLine(`object ____${parameter.Name} = message.Payload.GetPropertyByReflection("${parameter.Name}");`, contentIndent)
+                    } else {
+                        let parameterType = this.emitType(parameter.Type, builder);
+                        builder.appendLine(`${parameterType} ____${parameter.Name} = message.Payload.GetProperty<${parameterType}>("${parameter.Name}");`, contentIndent)
+                    }
+                }
+                let parameterNames = method.Parameters
+                        .map(parameter => `____${parameter.Name}`)
+                        .join(', ');
+                if (method.ReturnType.Reference === VoidType) {
+                    builder.appendLine(`${method.Name}(${parameterNames});`, contentIndent);
+                    builder.appendLine(`break;`, contentIndent);
+                } else {
+                    builder.appendLine(`return message.ReturnMessage(await ${method.Name}(${parameterNames}));`, contentIndent);
+                }
+                builder.appendLine(`}`, blockIndent);
+            }
+            builder.appendLine(`}`, switchIndent);
+            builder.appendLine(`throw new NotImplementedException($"{message.Service}.{message.Method} is not implemented.");`, switchIndent);
+            builder.appendLine(`}`, indent);
         }
     }
 

@@ -86,13 +86,13 @@ namespace MyService {
     }
 }
 
-__GroupManager.Declare('Adminstrator')
+__GroupManager.Set('Adminstrator')
 .AllowMethods(
     MyService.DevService.prototype.AB,
     MyService.MXU.prototype.resolve
     )
 .AllowServices(MyService.DevService);
 
-__GroupManager.Declare('User')
+__GroupManager.Set('User')
 .AllowServices(MyService.MXU);
 

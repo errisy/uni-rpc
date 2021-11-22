@@ -37,11 +37,11 @@ declare class EventEmitter<T> {
     Emit(message: T): void;
 }
 
-declare interface IGroupDescriptor {
-    AllowServices(...services: Function[]): IGroupDescriptor;
-    AllowMethods(...methods: CallableFunction[]): IGroupDescriptor;
+declare interface IGroupDescriptor<T> {
+    AllowServices(...services: Function[]): IGroupDescriptor<T>;
+    AllowMethods(...methods: CallableFunction[]): IGroupDescriptor<T>;
 }
 
 declare class __GroupManager {
-    static Declare(name: string): IGroupDescriptor;
+    static Set<T>(group: T): IGroupDescriptor<T>;
 }
