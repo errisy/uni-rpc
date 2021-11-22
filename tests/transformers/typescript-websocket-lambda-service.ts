@@ -370,7 +370,7 @@ module CodeGeneration {
                         builder.appendLine(`object ____${parameter.Name} = message.Payload.GetPropertyByReflection("${parameter.Name}");`, contentIndent)
                     } else {
                         let parameterType = this.emitType(parameter.Type, builder);
-                        builder.appendLine(`${parameterType} ____${parameter.Name} = message.Payload.GetProperty<${parameterType}>("${parameter.Name}");`, contentIndent)
+                        builder.appendLine(`${parameterType} ____${parameter.Name} = message.Payload['${parameter.Name}'];`, contentIndent)
                     }
                 }
                 let parameterNames = method.Parameters
