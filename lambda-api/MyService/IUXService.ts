@@ -3,6 +3,6 @@ namespace MyService
 {
     export interface IUXService extends $MyService_IUICloseService
     {
-        public void resolve();
+        resolve(): void;
     }
 }

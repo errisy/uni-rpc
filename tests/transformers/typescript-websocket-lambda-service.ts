@@ -490,9 +490,9 @@ module CodeGeneration {
                 let genericArugments = method.GenericArguments
                     .map(arg => this.emitType(arg, builder))
                     .join(', ');
-                    builder.appendLine(`public ${this.emitType(method.ReturnType, builder)} ${method.Name}<${genericArugments}>(${this.emitMethodParameters(method.Parameters, builder)});`, indent);
+                    builder.appendLine(`${method.Name}<${genericArugments}>(${this.emitMethodParameters(method.Parameters, builder)}): ${this.emitType(method.ReturnType, builder)};`, indent);
             } else {
-                builder.appendLine(`public ${this.emitType(method.ReturnType, builder)} ${method.Name}(${this.emitMethodParameters(method.Parameters, builder)});`, indent);
+                builder.appendLine(`${method.Name}(${this.emitMethodParameters(method.Parameters, builder)}): ${this.emitType(method.ReturnType, builder)};`, indent);
             }
         }
         emitType(typeInstance: Type, builder: CodeBuilder) {
