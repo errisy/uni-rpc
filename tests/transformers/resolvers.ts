@@ -142,7 +142,9 @@ export class SourceFileResovler implements ILocalNameResolver {
     private resolveEnum(token: ts.EnumDeclaration) {
         let name: string = token.symbol.escapedName.toString();
         if (!this.Groups.has(name)) {
-            this.Groups.set(name, new GroupManagement());
+            let groupManagement = new GroupManagement();
+            groupManagement.Name = name;
+            this.Groups.set(name, groupManagement);
         }
         let group = this.Groups.get(name);
         for (let member of token.members) {

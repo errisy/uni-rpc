@@ -1,6 +1,7 @@
 import { WebsocketServiceBase } from "./WebsocketServiceBase";
 import { IRequestContext, IWebSocketConnection, IWebsocketEvent, IWebSocketUser } from "./LambdaWebsocketTypes";
 import { BaseMessage } from "./BaseMessage";
+import { GroupClausesAuthorize } from './GroupAuthorizations'
 import { ApiGatewayManagementApi, DynamoDB } from 'aws-sdk';
 
 const WebSocketConnectionsTable = process.env['WebSocketConnectionsTable'];
@@ -28,6 +29,12 @@ export class WebsocketService {
       };
     }
     let message: BaseMessage = JSON.parse(event.body);
+    if (!GroupClausesAuthorize(this.user.Groups.S, message.Service, message.Method)) {
+      return {
+        statusCode: 401,
+        body: 'Unauthorized'
+      };
+    }
     if (this.services.has(message.Service)) {
       let service = this.services.get(message.Service);
       let result = await service.__invoke(message);
