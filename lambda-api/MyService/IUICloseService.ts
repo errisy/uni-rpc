@@ -1,8 +1,5 @@
 
-namespace MyService
+export interface IUICloseService
 {
-    export interface IUICloseService
-    {
-        test(): Promise<string>;
-    }
+    test(): Promise<Promise<string>>;
 }

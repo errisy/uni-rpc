@@ -1,6 +1,6 @@
 import {Message as $MyService_Message} from "./Message";
 export class AdvancedMessage extends $MyService_Message
 {
-    public override string __reflection { get; set; } = "MyService.AdvancedMessage";
+    __reflection: string = "MyService.AdvancedMessage";
     public story: string;
 }

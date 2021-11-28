@@ -2,8 +2,8 @@ import {SubMessage as $MyService_SubService_SubMessage} from "./SubService/SubMe
 export class Message
 {
     __reflection: string = "MyService.Message";
-    name: string;
+    public name: string;
     public value: number;
     public tested: boolean;
-    public sub: $MyService_SubService_SubMessage<$MyService_Message>;
+    public sub: $MyService_SubService_SubMessage<Message>;
 }

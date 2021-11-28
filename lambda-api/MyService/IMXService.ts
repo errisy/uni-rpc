@@ -1,8 +1,5 @@
 
-namespace MyService
+export interface IMXService
 {
-    export interface IMXService
-    {
-        testJob(): boolean;
-    }
+    testJob(): Promise<boolean>;
 }

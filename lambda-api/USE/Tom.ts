@@ -1,6 +1,6 @@
 
 export class Tom <Thrift>
 {
-    public virtual string __reflection { get; set; } = "USE.Tom";
+    __reflection: string = "USE.Tom";
     public value: Thrift[][];
 }

@@ -82,8 +82,18 @@ module CodeGeneration {
     const baseMessageType = DeclareType('UniRpc', 'BaseMessage');
     const returnMessageType = DeclareType('UniRpc', 'ReturnMessage');
     
-
+    function isSelfReference(typeInstance: Type, fullnameB: string[]) {
+        if (!typeInstance.Reference) return false;
+        let fullnameA: string[] = typeInstance.Reference.FullName;
+        if (fullnameA.length != fullnameB.length) return false;
+        let length = fullnameA.length;
+        for (let i = 0; i < length; ++i) {
+            if (fullnameA[i] != fullnameB[i]) return false;
+        }
+        return true;
+    }
     export function mapType(typeInstance: Type, builder: CodeBuilder, fullname: string[]): string {
+        if (isSelfReference(typeInstance, fullname)) return typeInstance.Reference.Name;
         if (typeInstance.IsGenericPlaceholder) {
             return typeInstance.Name;
         } else if (typeInstance.IsGeneric) {
@@ -428,7 +438,7 @@ module CodeGeneration {
             }
             builder.appendLine(`{`, indent);
             let fullname = this.instance.Fullname.join('.');
-            builder.appendLine(`public ${this.instance.Base ? 'override' : 'virtual'} string __reflection { get; set; } = "${fullname}";`, indent + 1);
+            builder.appendLine(`__reflection: string = "${fullname}";`, indent + 1);
             for (let property of this.instance.Properties) {
                 this.emitProperty(builder, indent + 1, property);
             }
@@ -449,10 +459,7 @@ module CodeGeneration {
             let filename = path.join(rootDirectory, ...this.instance.Namespace, this.instance.Name + '.ts');
             let builder: CodeBuilder = new CodeBuilder(importBuilder);
             let indent = 0;
-            builder.appendLine(`namespace ${this.instance.Namespace.join('.')}`, indent);
-            builder.appendLine('{', indent);
-            this.emitServiceInterface(builder, indent + 1);
-            builder.appendLine('}', indent);
+            this.emitServiceInterface(builder, indent);
             console.log('Write Code to:', filename);
             WriteFile(filename, builder.build(), 'utf-8');
         }
@@ -465,9 +472,6 @@ module CodeGeneration {
             else return ` extends ${baseTypes.join(', ')}`;
         }
         emitServiceInterface(builder: CodeBuilder, indent: number) {
-            builder.addImport('System');
-            builder.addImport('System.Collections.Generic');
-            builder.addImport('UniRpc.WebApplication');
             emitComments(builder, indent, this.instance.Comments);
             let heritage = this.emitHeritage(builder);
             if (this.instance.IsGeneric) {
@@ -490,9 +494,9 @@ module CodeGeneration {
                 let genericArugments = method.GenericArguments
                     .map(arg => this.emitType(arg, builder))
                     .join(', ');
-                    builder.appendLine(`${method.Name}<${genericArugments}>(${this.emitMethodParameters(method.Parameters, builder)}): ${this.emitType(method.ReturnType, builder)};`, indent);
+                    builder.appendLine(`${method.Name}<${genericArugments}>(${this.emitMethodParameters(method.Parameters, builder)}): Promise<${this.emitType(method.ReturnType, builder)}>;`, indent);
             } else {
-                builder.appendLine(`${method.Name}(${this.emitMethodParameters(method.Parameters, builder)}): ${this.emitType(method.ReturnType, builder)};`, indent);
+                builder.appendLine(`${method.Name}(${this.emitMethodParameters(method.Parameters, builder)}): Promise<${this.emitType(method.ReturnType, builder)}>;`, indent);
             }
         }
         emitType(typeInstance: Type, builder: CodeBuilder) {
@@ -625,7 +629,8 @@ module CodeGeneration {
             let keyIndex = 0;
             for (let key of this.keys) {
                 ++keyIndex;
-                builder.appendLine(`${key}: ${key}`, contentIndent);
+                let comma = keyIndex < keysSize ? ',' : '';
+                builder.appendLine(`${key}: ${key}${comma}`, contentIndent);
             }
             builder.appendLine(`};`, indent)
         }

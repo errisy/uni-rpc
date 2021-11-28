@@ -1,9 +1,9 @@
 
 export class OKS
 {
-    public virtual string __reflection { get; set; } = "MyService.OKS";
-    public test: $MyService_OKS;
-    public okss: $MyService_OKS[];
-    public cheese: $MyService_OKS[];
-    public use: {[key: string]:$MyService_OKS};
+    __reflection: string = "MyService.OKS";
+    public test: OKS;
+    public okss: OKS[];
+    public cheese: OKS[];
+    public use: {[key: string]:OKS};
 }

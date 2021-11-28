@@ -12,8 +12,23 @@ export const ServiceUserGroups = {
         Services: {
             'MyService.MXU': '*'
         }
+    },
+    Customers: {
+        Name: 'Customers',
+        Services: {
+            'MyService.DevService': '*'
+        }
+    }
+};
+export const TesterUserGroups = {
+    MainTester: {
+        Name: 'MainTester',
+        Services: {
+            'MyService.DevService': '*'
+        }
     }
 };
 export const __PolicySets = {
-    ServiceUserGroups: ServiceUserGroups
+    ServiceUserGroups: ServiceUserGroups,
+    TesterUserGroups: TesterUserGroups
 };
