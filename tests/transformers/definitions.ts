@@ -380,7 +380,7 @@ export class ServiceInterface implements ILocalNameResolver {
             method.link();
         }
     }
-}
+} 
 
 export class Method implements ILocalNameResolver {
     Reflection: 'Method' = 'Method';
