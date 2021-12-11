@@ -1,0 +1,10 @@
+{
+    "name": "pywebsocket",
+    "scripts": {
+        "watch": "nodemon server.py -e py,json,yaml,yml"
+    },
+    "devDependencies": {
+        "nodemon": "2.0.15"
+    },
+    "dependencies": {}
+}

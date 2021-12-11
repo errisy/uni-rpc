@@ -9,6 +9,7 @@ import { RPC, Target } from './rpc-configuration';
 import * as CSharpWebsocketService from './csharp-websocket-service';
 import * as TypeScriptWebsocketAngularClient from './typescript-websocket-angular-client';
 import * as TypeScriptWebsocketLambdaService from './typescript-websocket-lambda-service';
+import * as PythonWebsocketLambdaService from './python-websocket-lambda-service';
 
 function readRPCConfig() {
   let data = fs.readFileSync('uni-rpc.yaml', 'utf-8');
@@ -34,7 +35,19 @@ function emitFiles() {
           transpiler.emit(target);
         } break;
       }
-      
+    } else if(typeof target.py == 'string') {
+      switch (target.type) {
+        case 'websocket-lambda-service': {
+          let transpiler = new PythonWebsocketLambdaService.Transpiler(resolver);
+          transpiler.emit(target);
+        } break;
+        case 'lambda-service': {
+
+        } break;
+        case 'lambda-client': {
+
+        } break;
+      }
     }
   }
 }

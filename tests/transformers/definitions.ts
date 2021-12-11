@@ -1,4 +1,5 @@
 export interface ILocalNameResolver {
+    Reflection: 'SourceFileResovler' | 'Namespace' | 'Service' | 'Message' | 'ServiceInterface' | 'MessageInterface' | 'Method' | 'Property' | 'Argument' | 'Type';
     Parent: ILocalNameResolver;
     resolve(fullname: string[]): Type;
     build(parent: ILocalNameResolver): void;
@@ -137,6 +138,14 @@ export class Namespace implements ILocalNameResolver{
         this.Children.set(name, message);
         return message;
     }
+}
+
+export class Enum {
+    Name: string;
+    Namespace: string[];
+    Fullname: string[];
+    Members: string[];
+    Type: Type;
 }
 
 export class Message implements ILocalNameResolver {
@@ -415,6 +424,9 @@ export class Method implements ILocalNameResolver {
         this.ReturnType.build(this);
     }
     link() {
+        for (let genericArgument of this.GenericArguments) {
+            genericArgument.Parent = this;
+        }
         for (let parameter of this.Parameters) {
             parameter.link();
         }
@@ -518,3 +530,4 @@ export const DictType = new Type('Dict', 'Dict', true);
 export const ArrayType = new Type('Array', 'Array', true);
 export const PromiseType = new Type('Promise', 'Promise', true);
 export const VoidType = new Type('void', 'void');
+export const AnyType = new Type('any', 'any');

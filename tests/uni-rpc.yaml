@@ -3,5 +3,14 @@ rpc:
 #   type: websocket-service
 # - ts: '../ts-emit-dest/src/app/'
 #   type: websocket-angular-client
-- ts: '../lambda-api/'
+
+
+# - ts: '../lambda-api/'
+#   type: websocket-lambda-service
+# - ts: '../jswebsocket/'
+#   type: websocket-lambda-service
+# - ts: '../wsui/src/app/'
+#   type: websocket-angular-client
+
+- py: '../pywebsocket/'
   type: websocket-lambda-service

@@ -9,6 +9,15 @@ namespace MyService {
         use: Dict<string, MyService.OKS>;
     }
 
+    export interface IBaseMessage {
+        Id: string;
+        Service: string;
+        Method: string;
+        GenericArguments: string[];
+        Payload: string;
+        Success: boolean;
+        ErrorMessage: string;
+    }
 }
 
 

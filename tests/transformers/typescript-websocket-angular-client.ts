@@ -328,12 +328,13 @@ module CodeGeneration {
             } else {
                 builder.appendLine(`super();`, indent + 1);
             }
-            builder.appendLine(`this.__reflection = "${fullname}";`, indent + 1);
+            builder.appendLine(`this.__reflection = '${fullname}';`, indent + 1);
             if (this.instance.IsGeneric) {
                 let genericTypeNames = this.instance.GenericArguments
                     .map(arg => `typeof(${arg.Name}).FullName`)
                     .join(', ');
-                builder.appendLine(`this.__genericArguments = [${genericTypeNames}];`, indent + 1);
+                builder.appendLine(`this.__genericArguments = [];`, indent + 1);
+                // builder.appendLine(`this.__genericArguments = [${genericTypeNames}];`, indent + 1);
             } else {
                 builder.appendLine(`this.__genericArguments = [];`, indent + 1);
             }
@@ -424,7 +425,7 @@ module CodeGeneration {
             }
             builder.appendLine(`{`, indent);
             let fullname = this.instance.Fullname.join('.');
-            builder.appendLine(`public __reflection: string = "${fullname}";`, indent + 1);
+            builder.appendLine(`__reflection: string = '${fullname}';`, indent + 1);
             for (let property of this.instance.Properties) {
                 this.emitProperty(builder, indent + 1, property);
             }
@@ -432,7 +433,7 @@ module CodeGeneration {
         }
         emitProperty(builder: CodeBuilder, indent: number, property: Property) {
             emitComments(builder, indent, property.Comments);
-            builder.appendLine(`public ${property.Name}: ${this.emitType(property.Type, builder)};`, indent);
+            builder.appendLine(`${property.Name}: ${this.emitType(property.Type, builder)};`, indent);
         }
         emitType(typeInstance: Type, builder: CodeBuilder) {
             return CodeGeneration.mapType(typeInstance, builder, this.instance.Fullname);
@@ -445,10 +446,8 @@ module CodeGeneration {
             let filename = path.join(rootDirectory, ...this.instance.Namespace, this.instance.Name + '.ts');
             let builder: CodeBuilder = new CodeBuilder(importBuilder);
             let indent = 0;
-            builder.appendLine(`namespace ${this.instance.Namespace.join('.')}`, indent);
-            builder.appendLine('{', indent);
-            this.emitServiceInterface(builder, indent + 1);
-            builder.appendLine('}', indent);
+            builder.addHierarchicalImport('rxjs', 'Observable');
+            this.emitServiceInterface(builder, indent);
             console.log('Write Code to:', filename);
             WriteFile(filename, builder.build(), 'utf-8');
         }
@@ -486,9 +485,9 @@ module CodeGeneration {
                 let genericArugments = method.GenericArguments
                     .map(arg => this.emitType(arg, builder))
                     .join(', ');
-                    builder.appendLine(`public ${this.emitType(method.ReturnType, builder)} ${method.Name}<${genericArugments}>(${this.emitMethodParameters(method.Parameters, builder)});`, indent);
+                    builder.appendLine(`${method.Name}<${genericArugments}>(${this.emitMethodParameters(method.Parameters, builder)}): Observable<${this.emitType(method.ReturnType, builder)}>;`, indent);
             } else {
-                builder.appendLine(`public ${this.emitType(method.ReturnType, builder)} ${method.Name}(${this.emitMethodParameters(method.Parameters, builder)});`, indent);
+                builder.appendLine(`${method.Name}(${this.emitMethodParameters(method.Parameters, builder)}): Observable<${this.emitType(method.ReturnType, builder)}>;`, indent);
             }
         }
         emitType(typeInstance: Type, builder: CodeBuilder) {
@@ -507,10 +506,7 @@ module CodeGeneration {
             let filename = path.join(rootDirectory, ...this.instance.Namespace, this.instance.Name + '.ts');
             let builder: CodeBuilder = new CodeBuilder(importBuilder);
             let indent = 0;
-            builder.appendLine(`namespace ${this.instance.Namespace.join('.')}`, indent);
-            builder.appendLine('{', indent);
             this.emitMessageInterface(builder, indent + 1);
-            builder.appendLine('}', indent);
             console.log('Write Code to:', filename);
             WriteFile(filename, builder.build(), 'utf-8');
         }

@@ -49,7 +49,7 @@ namespace MyService {
     }
 
     export interface IUICloseService {
-        test(): Promise<string>;
+        test(): string;
     }
 
     export interface IUXService extends IUICloseService {
@@ -68,7 +68,7 @@ namespace MyService {
          * just one line
         */
         abstract resolve(): void;
-        abstract test(): Promise<string>;
+        abstract test(): string;
         sendAdvancedMessage: EventEmitter<MyService.AdvancedMessage>;
     } 
 
@@ -83,6 +83,15 @@ namespace MyService {
         Value = 'Value',
         Hello = 'Hello',
         Jade = 'Jade'
+    }
+
+    export abstract class TestService {
+        abstract test(name: string, value: number, msg: TestMessage): void;
+    }
+
+    export class TestMessage {
+        name: string;
+        item: number;
     }
 }
 

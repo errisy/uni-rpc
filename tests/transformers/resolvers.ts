@@ -1,11 +1,12 @@
 import {ILocalNameResolver, Namespace, Service, Message, Method, Parameter as Parameter, Property, Type,
-    BooleanType, StringType, FloatType, DoubleType, IntegerType, LongType, BytesType, ListType, DictType, ArrayType, VoidType, ServiceInterface, MessageInterface, PromiseType} from './definitions';
+    BooleanType, StringType, FloatType, DoubleType, IntegerType, LongType, BytesType, ListType, DictType, ArrayType, VoidType, ServiceInterface, MessageInterface, PromiseType, AnyType, Enum} from './definitions';
 import * as ts from 'typescript';
 import { SyntaxKindMap } from './SyntaxKindMap';
 import { GroupAuthorization, GroupManagement, GroupServiceAuthorization } from './group-management';
 import { ExpressionChainParser, HostVariable, MemberCall, PropertyAccess } from './expression-parser';
 
 export class SourceFileResovler implements ILocalNameResolver {
+    Reflection: 'SourceFileResovler' = 'SourceFileResovler';
     NamespaceStack: Namespace[] = [];
     Children: Map<string, Namespace> = new Map();
     Parent: ILocalNameResolver; // This will not be set, because this is the root node of the tree.
@@ -25,6 +26,7 @@ export class SourceFileResovler implements ILocalNameResolver {
         this.PredefinedTypes.set('Array', ArrayType);
         this.PredefinedTypes.set('void', VoidType);
         this.PredefinedTypes.set('Promise', PromiseType);
+        this.PredefinedTypes.set('any', AnyType);
     }
 
     resolve(fullname: string[]): Type {
@@ -65,7 +67,7 @@ export class SourceFileResovler implements ILocalNameResolver {
                     this.resolveModule(child as any);
                 } break;
                 case ts.SyntaxKind.EnumDeclaration: {
-                    this.resolveEnum(child as any);
+                    this.resolveEnumUserGroups(child as any);
                 } break;
                 case ts.SyntaxKind.ExpressionStatement: {
                     this.resolveStatement(child as any);
@@ -129,6 +131,9 @@ export class SourceFileResovler implements ILocalNameResolver {
                             case ts.SyntaxKind.InterfaceDeclaration: {
                                 this.resolveInterface(child as any);
                             } break;
+                            case ts.SyntaxKind.EnumDeclaration: {
+                                this.resolveEnumType(child as any);
+                            } break;
                         }
                     }
                     break;
@@ -139,7 +144,7 @@ export class SourceFileResovler implements ILocalNameResolver {
     }
 
     /** resolve Enum UserGroups */
-    private resolveEnum(token: ts.EnumDeclaration) {
+    private resolveEnumUserGroups(token: ts.EnumDeclaration) {
         let name: string = token.symbol.escapedName.toString();
         if (!this.Groups.has(name)) {
             let groupManagement = new GroupManagement();
@@ -150,6 +155,14 @@ export class SourceFileResovler implements ILocalNameResolver {
         for (let member of token.members) {
             let memberName = member.symbol.escapedName.toString();
             group.Members.add(memberName);
+        }
+    }
+
+    private resolveEnumType(token: ts.EnumDeclaration) {
+        let enumInstance = new Enum();
+        let name: string = token.symbol.escapedName.toString();
+        for (let member of token.members) {
+            
         }
     }
 

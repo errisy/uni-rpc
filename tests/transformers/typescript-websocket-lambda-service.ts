@@ -329,7 +329,7 @@ module CodeGeneration {
             let fullname = this.instance.Fullname.join('.');
             builder.appendLine(`public constructor () {`, indent);
             builder.appendLine(`super();`, indent + 1);
-            builder.appendLine(`this.__reflection = "${fullname}";`, indent + 1);
+            builder.appendLine(`this.__reflection = '${fullname}';`, indent + 1);
             // if (this.instance.IsGeneric) {
             //     let genericTypeNames = this.instance.GenericArguments
             //         .map(arg => `typeof(${arg.Name}).FullName`)
@@ -438,7 +438,7 @@ module CodeGeneration {
             }
             builder.appendLine(`{`, indent);
             let fullname = this.instance.Fullname.join('.');
-            builder.appendLine(`__reflection: string = "${fullname}";`, indent + 1);
+            builder.appendLine(`__reflection: string = '${fullname}';`, indent + 1);
             for (let property of this.instance.Properties) {
                 this.emitProperty(builder, indent + 1, property);
             }
