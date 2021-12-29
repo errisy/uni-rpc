@@ -1,5 +1,6 @@
 from typing import TypedDict, List
 
+
 class BaseMessage(TypedDict):
     Id: str
     Service: str
